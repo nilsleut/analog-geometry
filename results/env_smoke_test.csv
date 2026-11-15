@@ -1,0 +1,9 @@
+python,platform,torch,aihwkit,case,ok,info
+3.12.3,Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39,2.15.0+cpu,1.2.0,Linear/InferenceRPUConfig,True,"out=(3, 2)"
+3.12.3,Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39,2.15.0+cpu,1.2.0,Linear/SingleRPUConfig,True,"out=(3, 2)"
+3.12.3,Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39,2.15.0+cpu,1.2.0,Linear/TorchInferenceRPUConfig,True,"out=(3, 2)"
+3.12.3,Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39,2.15.0+cpu,1.2.0,Conv2d/InferenceRPUConfig,True,"out=(2, 8, 6, 6)"
+3.12.3,Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39,2.15.0+cpu,1.2.0,Conv2d/TorchInferenceRPUConfig,True,"out=(2, 8, 6, 6)"
+3.12.3,Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39,2.15.0+cpu,1.2.0,ReRAM noise models in aihwkit.inference.noise,True,available: 
+3.12.3,Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39,2.15.0+cpu,1.2.0,program+drift/InferenceRPUConfig(PCM default),True,|y_drift - y_prog|=0.1496
+3.12.3,Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39,2.15.0+cpu,1.2.0,program+drift/InferenceRPUConfig(ReRamWan2022),False,"ArgumentError: t_inference should be one of `[1.0, 86400.0, 172800.0]` | aihwkit.exceptions.ArgumentError: t_inference should be one of `[1.0, 86400.0, 172800.0]`"
