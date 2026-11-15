@@ -68,8 +68,17 @@ Reproducer:
     g, p = c.convert_to_conductances(torch.tensor([-1.0, 0.0, 1.0]))
     print(g)   # tensor([ 9.0000, 48.6000, 88.2000]) -> die Null liegt bei 48.6, nicht bei g_min=9
 
-## 7. Kein (gefundener) Weg, den RNG des C++-Simulators für Forward-/Peripherie-Rauschen zu seeden  [beobachtet] [Doku prüfen]
+## 7. Kein (gefundener) Weg, den RNG des C++-Simulators für Forward-/Peripherie-Rauschen zu seeden  [beobachtet] [Doku/Quelle geprüft 2026-11-15, master @ 350ff34]
 Umgebung: wie 2. Mit `torch.manual_seed` vor program/drift sind alle Läufe mit `forward.is_perfect=True` bitgenau reproduzierbar.
 Mit den Default-IOParameters (w_noise/out_noise aktiv) weichen zwei identische Läufe ab (MNIST-MLP: max |ΔCKA| 1.6e-3, |ΔAcc| 0.21 pp).
 In `aihwkit.simulator.rpu_base` habe ich keine Methode mit "seed" im Namen gefunden (dir() von rpu_base, rpu_base.tiles, FloatingPointTile).
-Vor einem Issue: Doku und Beispiele nach einem Seed-Mechanismus durchsuchen (ggf. Umgebungsvariable oder CUDA/CPU-RNG-Init).
+Prüfung (2026-11-15):
+- Doku-Seite https://aihwkit.readthedocs.io/en/latest/using_simulator.html: keine Erwähnung von Seed, RNG oder Reproduzierbarkeit
+  (nur diese Seite geprüft, nicht die ganze Doku).
+- Quelle master @ 350ff34, src/rpucuda/rng.cpp: `RealWorldRNG<T>::setSeed(seed)` nimmt bei seed == 0 die Uhrzeit
+  (`std::chrono::high_resolution_clock::now()`). Das passt zur beobachteten Nicht-Reproduzierbarkeit.
+- Python-Bindings (src/aihwkit/simulator/rpu_base_src/rpu_base*.cpp): Einziger Treffer für "seed" ist `construction_seed`
+  in rpu_base_devices.cpp (Geräteparameter beim Konstruieren), kein Seed für das Forward-Rauschen der Tiles.
+  Mit welchem Seed die Tile-RNG konstruiert wird, habe ich nicht im Tile-Code verfolgt.
+Vorschlag fürs Issue: Seed für das Forward-/IO-Rauschen pro Tile oder global exponieren, oder dokumentieren, dass es zeitbasiert ist.
+Möglicher Workaround (nicht getestet): TorchInferenceRPUConfig, falls dessen Rauschen über torch-RNG läuft.
