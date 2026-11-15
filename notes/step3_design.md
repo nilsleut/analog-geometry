@@ -128,3 +128,26 @@ als reiner Versatz pro Stimulus (linear CKA mit Zentrierung pro Stimulus ≥ 0,9
 diesen Versatz in eine Abweichung außerhalb des Seed-Referenzbands (ab 1 Woche). In der zweiten Schicht bleibt der isolierte Effekt
 im Band. Ihre Abweichung im Gesamtnetz ist mit einer Fortpflanzung aus der ersten Schicht vereinbar.“
 (Unter den untersuchten Einstellungen; MNIST-MLP. CIFAR folgt.)
+
+## CIFAR-Restlauf abgeschlossen (2026-11-15, 20:07–23:37)
+Alle 25 Einstellungen vollständig (5 Seeds × 3 Durchgänge). Commits 0d322e7, a69e8f9, 21b5c33, af991a2, 5f45e9d.
+RATE-Zeilen (s/Lauf): 49.4 (Rausch 1/2/8; durch parallele MNIST-Rechnung gebremst), 49.9 (Drift + Prä), 30.5 (Stufen), 41.7, 30.9.
+Ergebnis nach Vorab-Regel (results/findings_cifar10.csv): KEIN Befund. Accuracy-stabil (<= 1 pp) sind nur ideal, Rauschskala 0 (0.50 pp)
+und Stufen 64 (0.24 pp) / inf. Dort liegt die Geometrie überall im Band. Schon der Ankerpunkt (Skala 1, 1 s) verliert 1.07 pp.
+Drift: 1 h 19.5 pp, 1 d 30.0 pp, 1 Wo 35.9 pp, 1 J 45.1 pp. Kontrolle 2a (ohne Mittelwert): 2.24 / 3.20 pp, Geometrie im Band.
+
+## Punkt 3 / Punkt 1 auf CIFAR (Prä-Aktivierungen, isolierter Test)
+Prä-Aktivierungen im Gesamtnetz (results/preact_summary_cifar10.csv), cka_stimc, Band-Min conv1 0.9755 / conv2 0.9144:
+- conv1 (Eingabe = Bild, also isoliert): 0.9998 (1 s), 0.9908 (1 h), 0.9759 (1 d), 0.9623 (1 Wo), 0.9260 (1 J) -> ab 1 Wo AUSSERHALB schon vor der ReLU.
+  1 d liegt 0.0004 über der Bandgrenze (im Band).
+- conv2: ab 1 h außerhalb (0.784 ... 0.453).
+- Kontrolle 2a: vor und nach der ReLU im Band (>= 0.986).
+Isolierter Test (results/isolated_summary_cifar10.csv), cka_stimc:
+- conv2 vor der ReLU: 0.9217 / 0.8983 / 0.8504 (1 d / 1 Wo / 1 J), Band-Min 0.9144 -> im Band (1 d), AUSSERHALB (1 Wo, 1 J).
+- conv2 nach der ReLU: 0.8198 / 0.7671 / 0.6479, Band-Min 0.9235 -> außerhalb.
+- fc (keine ReLU): 0.9996 / 0.9995 / 0.9994 -> im Band.
+Bewertung: Auf CIFAR ist der Drift-Effekt in den Faltungsschichten schon VOR der ReLU kein reiner Versatz pro Stimulus.
+Die MNIST-Lesart überträgt sich nicht. Ungeprüfte Vermutung: Bei Faltung ist der Versatz Δw·Σ(Eingaben im Rezeptivfeld)
+ortsabhängig (Bildinhalt, Zero-Padding am Rand). Die Zentrierung pro Stimulus entfernt nur eine Konstante pro Bild.
+Für die vollverbundene fc-Schicht gilt die Lesart (reiner Versatz) wie auf MNIST.
+Ohnehin kein Befund nach Vorab-Regel, weil die Accuracy bei allen Drift-Zeiten >= 1 h um mehr als 1 pp fällt.
