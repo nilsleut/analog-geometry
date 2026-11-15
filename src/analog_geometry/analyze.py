@@ -99,6 +99,41 @@ def sweep_summary(ds: str, band: pd.DataFrame) -> pd.DataFrame:
     return s
 
 
+PRE_TO_POST = {"cifar10": {"conv1": "act1", "conv2": "act2"}, "mnist": {"fc1": "act1", "fc2": "act2"}}
+
+
+def preact_summary(ds: str, post: pd.DataFrame) -> pd.DataFrame | None:
+    """ReLU-offset check: metrics on pre-activations vs. own seed band, side by side with the post-ReLU layer."""
+    p_path, r_path = RESULTS / f"preact_{ds}.csv", RESULTS / f"digital_seed_reference_preact_{ds}.csv"
+    if not (p_path.exists() and r_path.exists()):
+        return None
+    d = pd.read_csv(p_path, keep_default_na=False, na_values=[""], dtype={"levels": str, "drift_mean": str})
+    ref = pd.read_csv(r_path)
+    band = ref.groupby("layer").agg(**{f"{m}_band_min": (m, "min") for m in GEOM}).reset_index()
+    rows = []
+    for key, g in d.groupby(SETTING_COLS + ["layer"], dropna=False, sort=False):
+        row = dict(zip(SETTING_COLS + ["layer"], key))
+        row.update(n=len(g), n_seeds=g["seed"].nunique(), n_reps=g["rep"].nunique())
+        for col in GEOM:
+            row.update(_decompose(g, col))
+        b = band.set_index("layer").loc[row["layer"]]
+        for m in GEOM:
+            row[f"{m}_band_min"] = b[f"{m}_band_min"]
+            row[f"{m}_outside_band"] = bool(row[f"{m}_mean"] < b[f"{m}_band_min"])
+        # matching post-ReLU layer from the main summary
+        q = post[(post["sweep"] == row["sweep"]) & (post["layer"] == PRE_TO_POST[ds][row["layer"]]) &
+                 (post["t_inference"].astype(float) == float(row["t_inference"]))]
+        row["post_layer"] = PRE_TO_POST[ds][row["layer"]]
+        for m in GEOM:
+            row[f"post_{m}_mean"] = q[f"{m}_mean"].iloc[0] if len(q) == 1 else np.nan
+            row[f"post_{m}_outside_band"] = bool(q[f"{m}_outside_band"].iloc[0]) if len(q) == 1 else None
+        rows.append(row)
+    s = pd.DataFrame(rows)
+    s.insert(0, "dataset", ds)
+    s.to_csv(RESULTS / f"preact_summary_{ds}.csv", index=False)
+    return s
+
+
 def _xvals(sub: pd.DataFrame, sweep: str):
     col = SWEEP_X[sweep]
     if sweep == "levels":
@@ -184,6 +219,7 @@ def main():
     baseline_summary()
     band = reference_band(args.dataset)
     s = sweep_summary(args.dataset, band)
+    preact_summary(args.dataset, s)
     main_figure(args.dataset, s, band)
 
 

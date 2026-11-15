@@ -27,6 +27,12 @@ LAYERS = {
     "mnist": ["act1", "act2", "fc3"],
 }
 
+# Pre-activations (layer output BEFORE the ReLU, incl. bias) for the ReLU-offset check; paired with LAYERS[ds][0:2].
+PRE_LAYERS = {
+    "cifar10": ["conv1", "conv2"],
+    "mnist": ["fc1", "fc2"],
+}
+
 _NORM = {
     "cifar10": ((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
     "mnist": ((0.1307,), (0.3081,)),

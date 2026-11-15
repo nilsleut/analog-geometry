@@ -77,3 +77,17 @@ Anmerkung: Die 0.0016 stammen vom Punkt `periphery_default` (C++-RNG). Läufe mi
 sind bitgenau reproduzierbar. Die Spanne aus Seeds und Durchgängen (cka_stimc_std_total) ist aber ebenfalls größer als 0.0002.
 Geltungsbereich: Die Nutzerregel nennt nur diesen einen Fall. Sie berührt nur die Versatz-Kontrolle 2b, nicht die Vorab-Befundregel (die auf cka/rsa beruht).
 Weitere Grenzfälle (Abstand < 0.0016 zum Bandminimum) werden einzeln gemeldet und nicht automatisch entschieden.
+
+## Punkt 3: ReLU-Hypothese, MNIST (2026-11-15)
+Daten: results/preact_mnist.csv, results/digital_seed_reference_preact_mnist.csv -> results/preact_summary_mnist.csv
+(Drift-Reihe + Kontrolle 2a neu gerechnet mit Prä-Aktivierungen, 105 Läufe. Die Accuracies sind identisch zu analog_sweep_mnist.csv,
+105/105 geprüft. Statt nur 1 d / 1 Wo ist die ganze Drift-Reihe gerechnet, weil sie auf MNIST billig ist.)
+Kriterium (Nutzer): CKA mit Zentrierung pro Stimulus auf den Prä-Aktivierungen. Im Band vor der ReLU und außerhalb danach -> Lesart gestützt.
+Schon vorher außerhalb -> Lesart falsch.
+- Schicht 1 (fc1 -> act1): vor der ReLU cka_stimc 0.9997-0.9999 bei allen Drift-Zeiten (Band-Min 0.9820), also IM Band.
+  Danach (act1): 1 d 0.9552 = UNENTSCHIEDEN (Grenzfall-Regel), 1 Wo 0.9410 und 1 J 0.9097 AUSSERHALB. -> Lesart für Schicht 1 GESTÜTZT (1 Wo, 1 J).
+- Schicht 2 (fc2 -> act2): vor der ReLU cka_stimc 1 d 0.9338, 1 Wo 0.9065, 1 J 0.8338 (Band-Min 0.9513), also schon AUSSERHALB.
+  -> Lesart für Schicht 2 FALSCH.
+  Ungeprüfte Vermutung: Schicht 2 erbt die nicht-subtraktive Veränderung aus act1. Ihr eigener gleichförmiger Versatz Δw·Σ act1 würde durch die Zentrierung entfernt.
+- Kontrolle 2a (ohne Drift-Mittelwert): vor und nach der ReLU alles im Band (>= 0.998).
+Formulierung für den Report: nur schichtweise, nicht als allgemeine Aussage.
