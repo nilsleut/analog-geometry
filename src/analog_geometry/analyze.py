@@ -121,6 +121,77 @@ def findings_table(ds: str, s: pd.DataFrame) -> pd.DataFrame:
     return t
 
 
+BOOT_B, BOOT_SEED = 10000, 20261116
+
+
+def band_bootstrap(ds: str) -> pd.DataFrame | None:
+    """Uncertainty of the band minimum: bootstrap over the 5 trained seeds.
+
+    Each replicate draws 5 seeds with replacement; band_min* = min over all pairs of DISTINCT drawn seeds
+    (self-pairs would give 1.0 and are excluded). Replicates with < 2 distinct seeds are dropped.
+    Caveat: fewer distinct seeds -> fewer pairs -> the min is biased upward; the CI is therefore wide and asymmetric.
+    -> results/band_bootstrap_<ds>.csv
+    """
+    sources = [("post", RESULTS / f"digital_seed_reference_{ds}.csv"),
+               ("pre", RESULTS / f"digital_seed_reference_preact_{ds}.csv")]
+    rng = np.random.default_rng(BOOT_SEED)
+    rows = []
+    for kind, path in sources:
+        if not path.exists():
+            continue
+        ref = pd.read_csv(path)
+        seeds = sorted(set(ref["seed_a"]) | set(ref["seed_b"]))
+        draws = rng.choice(seeds, size=(BOOT_B, len(seeds)), replace=True)
+        for layer, g in ref.groupby("layer", sort=False):
+            for m in [c for c in GEOM if c in g]:
+                val = {(min(a, b), max(a, b)): v for a, b, v in zip(g["seed_a"], g["seed_b"], g[m])}
+                mins = []
+                for d in draws:
+                    u = sorted(set(d.tolist()))
+                    if len(u) < 2:
+                        continue
+                    mins.append(min(val[(a, b)] for i, a in enumerate(u) for b in u[i + 1:]))
+                mins = np.asarray(mins)
+                rows.append({"dataset": ds, "kind": kind, "layer": layer, "metric": m, "n_pairs": len(val),
+                             "band_min_observed": min(val.values()), "boot_n": len(mins),
+                             "boot_ci_low_2.5": np.percentile(mins, 2.5), "boot_median": np.median(mins),
+                             "boot_ci_high_97.5": np.percentile(mins, 97.5)})
+    if not rows:
+        return None
+    t = pd.DataFrame(rows)
+    t.to_csv(RESULTS / f"band_bootstrap_{ds}.csv", index=False)
+    return t
+
+
+ISO_BAND = {  # isolated stage -> (reference kind, reference layer name)
+    "mnist": {("fc2", "pre"): ("pre", "fc2"), ("fc2", "post"): ("post", "act2"), ("fc3", "pre"): ("post", "fc3")},
+    "cifar10": {("conv2", "pre"): ("pre", "conv2"), ("conv2", "post"): ("post", "act2"), ("fc", "pre"): ("post", "fc")},
+}
+
+
+def isolated_summary(ds: str) -> pd.DataFrame | None:
+    """Layer-isolated ReLU test vs. the matching seed band. -> results/isolated_summary_<ds>.csv"""
+    p = RESULTS / f"isolated_{ds}.csv"
+    refs = {"post": RESULTS / f"digital_seed_reference_{ds}.csv", "pre": RESULTS / f"digital_seed_reference_preact_{ds}.csv"}
+    if not p.exists() or not all(r.exists() for r in refs.values()):
+        return None
+    d = pd.read_csv(p)
+    bands = {k: pd.read_csv(v).groupby("layer")[GEOM].min() for k, v in refs.items()}
+    rows = []
+    for (t, layer, stage), g in d.groupby(["t_inference", "layer", "stage"], sort=False):
+        kind, ref_layer = ISO_BAND[ds][(layer, stage)]
+        row = {"dataset": ds, "t_inference": t, "layer": layer, "stage": stage, "band_ref": f"{kind}:{ref_layer}",
+               "n": len(g), "n_seeds": g["seed"].nunique(), "n_reps": g["rep"].nunique()}
+        for m in GEOM:
+            row.update(_decompose(g, m))
+            row[f"{m}_band_min"] = bands[kind].loc[ref_layer, m]
+            row[f"{m}_outside_band"] = bool(row[f"{m}_mean"] < row[f"{m}_band_min"])
+        rows.append(row)
+    s = pd.DataFrame(rows)
+    s.to_csv(RESULTS / f"isolated_summary_{ds}.csv", index=False)
+    return s
+
+
 PRE_TO_POST = {"cifar10": {"conv1": "act1", "conv2": "act2"}, "mnist": {"fc1": "act1", "fc2": "act2"}}
 
 
@@ -243,6 +314,8 @@ def main():
     s = sweep_summary(args.dataset, band)
     findings_table(args.dataset, s)
     preact_summary(args.dataset, s)
+    band_bootstrap(args.dataset)
+    isolated_summary(args.dataset)
     main_figure(args.dataset, s, band)
 
 

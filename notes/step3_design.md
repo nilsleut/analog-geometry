@@ -91,3 +91,40 @@ Schon vorher außerhalb -> Lesart falsch.
   Ungeprüfte Vermutung: Schicht 2 erbt die nicht-subtraktive Veränderung aus act1. Ihr eigener gleichförmiger Versatz Δw·Σ act1 würde durch die Zentrierung entfernt.
 - Kontrolle 2a (ohne Drift-Mittelwert): vor und nach der ReLU alles im Band (>= 0.998).
 Formulierung für den Report: nur schichtweise, nicht als allgemeine Aussage.
+
+## Nachtrag 2026-11-15: Begründung der Grenzfall-Regel korrigiert (die Regel selbst bleibt unverändert)
+Korrektur: Die 0.0016 (Nicht-Reproduzierbarkeit) gelten NUR für den Punkt `periphery_default`. Die Drift-Läufe sind bitgenau reproduzierbar,
+die 0.0016 begründen den Grenzfall also nicht.
+Begründung für die Drift-Läufe (Nutzer): Die Bandgrenze ist selbst unsicher. Das Minimum stammt aus nur 10 Seed-Paaren (5 Seeds).
+Bootstrap über die 5 Seeds (results/band_bootstrap_mnist.csv; B = 10000, Seed 20261116; je Replikat 5 Seeds mit Zurücklegen,
+Minimum über Paare verschiedener Seeds):
+- act1, cka_stimc: beobachtetes Minimum 0.9554, 95%-Bootstrap-Intervall [0.9554, 0.9632], Median 0.9580.
+Einschränkung (wichtig): Der Bootstrap eines Minimums kann nie unter das beobachtete Minimum fallen (Resampling erzeugt keine neuen,
+kleineren Paarwerte). Das Intervall zeigt deshalb nur Unsicherheit nach OBEN. Danach läge der Grenzfall 0.9552 eher deutlicher außerhalb.
+Die Unsicherheit nach unten (mehr Seeds -> mehr Paare -> tendenziell kleineres Minimum) erfasst diese Methode prinzipiell nicht.
+Ergänzend, deskriptiv: Die 10 Paarwerte act1/cka_stimc haben Mittel 0.9609, sd 0.0030. 0.9552 liegt bei Mittel - 1.9 sd,
+also im Bereich, den man bei mehr Seed-Paaren unter Normalannahme erwarten würde. Das stützt „unentschieden“, ist aber kein Test.
+Fazit: Die Regel bleibt (unentschieden, zählt nicht als außerhalb). Der Bootstrap stützt die Begründung NICHT direkt;
+gestützt wird sie nur durch das deskriptive Argument oben.
+
+## Punkt 1 (2026-11-15): Schichtweise isolierter ReLU-Test, MNIST
+Methode (src/analog_geometry/isolated.py): Gleiches programmiertes und gedriftetes Netz wie im Sweep (gleiche noise_seeds).
+Schicht l bekommt die DIGITALEN Aktivierungen von Schicht l-1 als Eingabe und wird mit der digitalen Schicht l bei gleicher Eingabe verglichen.
+Gegenprobe „ideal“: max |Δ| <= 1.3e-5, CKA = 1.0 (MNIST und CIFAR). 5 Seeds × 3 Durchgänge je Drift-Zeit.
+Ergebnis (results/isolated_summary_mnist.csv), cka_stimc:
+- fc2 vor der ReLU: 0.9998 / 0.9998 / 0.9998 (1 d / 1 Wo / 1 J), Band-Min 0.9513 -> IM Band.
+- fc2 nach der ReLU (act2): 0.9902 / 0.9857 / 0.9719, Band-Min 0.9617 -> IM Band (nicht außerhalb, wie die Lesart erwarten würde).
+- fc3 (keine ReLU): 0.9997 / 0.9997 / 0.9996 -> IM Band.
+- Schicht 1 ist ohnehin isoliert (Eingabe = Bild): vor der ReLU >= 0.9997 im Band, danach 1 Wo / 1 J außerhalb, 1 d unentschieden.
+Bewertung: Die Lesart gilt isoliert NUR in Schicht 1. In Schicht 2 ist der eigene Effekt vor der ReLU ebenfalls ein reiner Versatz,
+nach der ReLU sinkt CKA leicht, bleibt aber im Band. Die Abweichung von act2 im Gesamtnetz (z. B. 1 Wo 0.9477) ist damit
+vereinbar mit einer Fortpflanzung aus Schicht 1, nicht mit einem eigenen ReLU-Effekt dieser Schicht.
+Die vorgegebene Formulierung „Der Versatz ist pro Schicht additiv und wird erst durch die Nichtlinearität ... fortpflanzt.“
+gilt NICHT, weil die Lesart nicht in allen Schichten zutrifft.
+
+### Report-Formulierung ReLU-Teil (Entwurf, angepasst)
+„Isoliert betrachtet (digitale Eingabe, analoge Schicht) wirkt die CMO-Drift in jeder untersuchten Schicht vor der Nichtlinearität
+als reiner Versatz pro Stimulus (linear CKA mit Zentrierung pro Stimulus ≥ 0,9996). Nur in der ersten Schicht verschiebt die ReLU
+diesen Versatz in eine Abweichung außerhalb des Seed-Referenzbands (ab 1 Woche). In der zweiten Schicht bleibt der isolierte Effekt
+im Band. Ihre Abweichung im Gesamtnetz ist mit einer Fortpflanzung aus der ersten Schicht vereinbar.“
+(Unter den untersuchten Einstellungen; MNIST-MLP. CIFAR folgt.)
