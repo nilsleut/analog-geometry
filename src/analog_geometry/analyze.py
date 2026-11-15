@@ -99,6 +99,28 @@ def sweep_summary(ds: str, band: pd.DataFrame) -> pd.DataFrame:
     return s
 
 
+def findings_table(ds: str, s: pd.DataFrame) -> pd.DataFrame:
+    """One row per complete setting: accuracy loss, layers outside the band, pre-registered rule. -> results/findings_<ds>.csv"""
+    rows = []
+    for key, g in s[s["complete"]].groupby(SETTING_COLS, dropna=False, sort=False):
+        r0 = g.iloc[0]
+        row = dict(zip(SETTING_COLS, key))
+        row.update(acc_drop_pp_mean=r0["acc_drop_pp_mean"],
+                   acc_drop_pp_std_between_seed=r0["acc_drop_pp_std_between_seed"],
+                   acc_drop_pp_std_within_seed=r0["acc_drop_pp_std_within_seed"],
+                   acc_stable=bool(r0["acc_drop_pp_mean"] <= 1.0))
+        for m in GEOM:
+            row[f"{m}_layers_outside"] = ";".join(g.loc[g[f"{m}_outside_band"], "layer"]) or "-"
+            row[f"{m}_min_over_layers"] = g[f"{m}_mean"].min()
+        row["finding"] = bool(r0["finding"])
+        row["finding_metric"] = r0["finding_metric"] if row["finding"] else ""
+        rows.append(row)
+    t = pd.DataFrame(rows)
+    t.insert(0, "dataset", ds)
+    t.to_csv(RESULTS / f"findings_{ds}.csv", index=False)
+    return t
+
+
 PRE_TO_POST = {"cifar10": {"conv1": "act1", "conv2": "act2"}, "mnist": {"fc1": "act1", "fc2": "act2"}}
 
 
@@ -219,6 +241,7 @@ def main():
     baseline_summary()
     band = reference_band(args.dataset)
     s = sweep_summary(args.dataset, band)
+    findings_table(args.dataset, s)
     preact_summary(args.dataset, s)
     main_figure(args.dataset, s, band)
 
