@@ -148,6 +148,8 @@ predicted uniform shift: -2.49% of max|w| (single device)
 
 Setting only the mean drift term to 0 (≈ a reference that drifts along) gives 2.2 pp on CIFAR at 1 day.
 
+**Side observation (not a bug).** With the single-device converter, weights near zero sit mid-range, where the conductance-dependent CMO programming noise (σ = 0.0112 + 0.0113·g µS, acceptance 2 %) is largest. Per weight, the programming noise is therefore 2.4–4.9× larger than with a differential pair (per tile, in units of max|w|). Once the effective resolution is matched (noise scale with equal per-weight error; levels with equal weight step), the accuracy difference between the two converters disappears in our runs. So the converter choice also matters for noise comparisons, not only for drift.
+
 **Source questions.**
 1. The docstring cites "Falcone et al. (In Review)" (reram.py:172-173) without a title. Is this arXiv:2502.04524 (Falcone et al., "All-in-One Analog AI Hardware: On-Chip Training and Inference with Conductive-Metal-Oxide/HfOx ReRAM Devices")?
 2. If so, was the measured array read out with a single device per weight against a fixed reference, or as a differential pair? The paper says that "pre-trained normalized weights are initially mapped into target conductances" (Sec. 2.2.1), but we could not find how signed weights or the zero reference were realised.

@@ -285,3 +285,9 @@ Vorab-Regel auf allen neuen (A)-Punkten: kein Befund, kein „unentschieden“ a
 Stufen stimmen (C) und (A) bei gleichem Gewichtsschritt (k_A = r(k−1)+1) innerhalb der Seed-Streuung überein; die
 Faustregel 2k−1 überschätzt die Auflösung von (C), weil r < 2. Kernaussage unverändert. Nicht untersucht: ob der
 strukturelle Unterschied (viele exakte Nullen in (C)) die Geometrie anders verändert als (A) bei gleichem RMS-Fehler.
+
+## Freeze (16.11.2026)
+
+Keine weiteren Analysen. Offen und nur im Report vermerkt: exakte Nullen bei 8 Stufen in (C). Issue #9 um eine kurze
+Beobachtung zum leitwertabhängigen Programmierrauschen ergänzt (Entwurf, nicht gepostet). Review-Paket in `review/`
+(`scripts/build_review.sh`). Tag `v1.0-review` (lokal).

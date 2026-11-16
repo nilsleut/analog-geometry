@@ -40,6 +40,7 @@ Alle Läufe verwenden 5 Trainings-Seeds × 3 Programmierdurchgänge (`noise_seed
 | Zusammenfassungen, Befund-Regel, `figures/main_<ds>` | `py -m analog_geometry.analyze --dataset mnist` (ebenso `cifar10`) | `results/sweep_summary*_<ds>.csv`, `findings*_<ds>.csv`, `band_bootstrap_<ds>.csv`, … |
 | Abb. 1–3, Gesamttabelle | `py -m analog_geometry.report_figures` | `figures/fig1_drift_variants`, `fig2_noise_levels`, `fig3_delta_w`, `results/findings_all.csv` |
 | Alles aus den Roh-CSVs neu | `bash scripts/rebuild_all.sh` (in WSL) | alle Zusammenfassungen und Abbildungen |
+| Review-Paket | `bash scripts/build_review.sh` (Git Bash auf dem Host; braucht pandoc und Chrome) | `review/report.pdf`, `fig1–3.png`, `issue9.md` |
 | Zahlenprüfung Report | `py scripts/check_report_numbers.py` | `notes/number_check.md` |
 
 ## Ordnerstruktur
