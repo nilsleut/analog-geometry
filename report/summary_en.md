@@ -2,7 +2,7 @@
 
 Nils Leutenegger · independent researcher, Zug, Switzerland · nils.leutenegger@gmail.com · arXiv: 2608.12408, 2611.15533
 
-*One-page summary · 16 Nov 2026 · aihwkit 1.2.0 · repository: https://github.com/nilsleut/analog-geometry · related aihwkit issue: [LINK-TO-ISSUE]*
+*One-page summary · 16 Nov 2026 · aihwkit 1.2.0 · repository: https://github.com/nilsleut/analog-geometry · related aihwkit issue: (https://github.com/IBM/aihwkit/issues/844)*
 
 **Question.** How do analog in-memory inference non-idealities (programming noise, finite conductance levels, drift) change the accuracy and the representational geometry (linear CKA, RSA) of small, digitally trained networks? While checking the drift results I found that the size of the drift effect depends mainly on which conductance converter the noise model assumes.
 
