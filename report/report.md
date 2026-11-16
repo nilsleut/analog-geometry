@@ -31,7 +31,7 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
 
 ## Ergebnisse
 
-**1. Der Versatz wirkt auf das Gewicht (Abb. 3).** Bei (A) ist der Drift-Schritt nach 1 Tag für positive, negative und ≈ 0-Gewichte gleich. Er beträgt −1,97 bis −2,53 % von max|w| je Kachel und entspricht der Vorhersage −0,089·ln(t)/scale_ratio auf < 2 % [gate_drift_offset]. Bei (C) schrumpft der Betrag symmetrisch (−1,33 % bei w > 0, +1,33 % bei w < 0, ≈ 0 bei w ≈ 0). Die skalare Drift-Kompensation gleicht das weitgehend aus (α = 1,04–1,19). Gegen den additiven Versatz bei (A) wirkt sie nicht (α = 0,95–1,00).
+**1. Der Versatz wirkt auf das Gewicht (Abb. 3).** Bei (A) ist der Drift-Schritt nach 1 Tag für positive, negative und ≈ 0-Gewichte gleich. Er beträgt −1,97 bis −2,53 % von max|w| je Kachel und entspricht der Vorhersage −0,089·ln(t)/scale_ratio auf < 2 % [gate_drift_offset]. Bei (C) schrumpft der Betrag symmetrisch (−1,33 % bei w > 0, +1,33 % bei w < 0, ≈ 0 bei w ≈ 0). Die skalare Drift-Kompensation gleicht das weitgehend aus (α = 1,04–1,19). Gegen den additiven Versatz bei (A) wirkt sie nicht (α = 0,94–1,00).
 
 **2. Drift (Abb. 1, Tabelle).**
 - **CIFAR, Variante (A):** Der Accuracy-Verlust steigt von 1,07 pp (1 s) auf 19,5 / 30,0 / 35,9 / 45,1 pp (1 h / 1 d / 1 Wo / 1 J). CKA und RSA fallen ab 1 h in allen Schichten unter das Band.
