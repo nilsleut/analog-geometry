@@ -15,6 +15,7 @@ Unter den untersuchten Einstellungen hängt der Drift-Schaden im `ReRamCMONoiseM
 - **Metriken:** Accuracy-Verlust auf dem vollen Testset, gemessen gegen das digitale Netz desselben Seeds. Linear CKA und RSA (Spearman auf 1 − Pearson-RDMs) gegen das digitale Netz, je Schicht auf 1000 festen Testbildern.
 - **Referenzband:** Spanne [min, max] über alle 10 Paare digitaler Seeds.
 - **Vorab-Regel:** Eine Einstellung ist ein *Befund*, wenn der Accuracy-Verlust ≤ 1 pp ist und CKA oder RSA in mindestens einer Schicht unter dem Band liegt.
+- **Grenzfall-Regel (automatisiert):** Liegt ein Schichtmittel innerhalb ± der Breite des Bootstrap-Intervalls der Bandgrenze, gilt die Schicht als „unentschieden“ und nicht als außerhalb. Diese Breite wird nach unten gespiegelt, weil der Bootstrap eines Minimums nur nach oben streut. Eine accuracy-stabile Einstellung, deren Abweichung nur aus solchen Schichten besteht, heißt „unentschieden“ [findings_all, Spalte category].
 
 **Drei Varianten des Drift-Modells:**
 
@@ -36,15 +37,15 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
 - **CIFAR, Variante (A):** Der Accuracy-Verlust steigt von 1,07 pp (1 s) auf 19,5 / 30,0 / 35,9 / 45,1 pp (1 h / 1 d / 1 Wo / 1 J). CKA und RSA fallen ab 1 h in allen Schichten unter das Band.
 - **CIFAR, (B) und (C):** (B) verliert 2,2 / 3,2 pp (1 d / 1 J), (C) 1,1 / 1,4 / 2,2 pp (1 d / 1 Wo / 1 J). Die Geometrie bleibt in beiden Varianten in allen Schichten im Band.
 - **CIFAR nach Vorab-Regel:** Es gibt keinen Befund, in keiner Variante. Accuracy-stabil sind nur Einstellungen ohne Drift (Rauschskala 0: 0,50 pp; ≥ 64 Stufen), und dort liegt die Geometrie im Band [findings_cifar10]. Schon der Ankerpunkt (A, Skala 1, 1 s) liegt mit 1,07 pp knapp über der Grenze. Dieser Nullbefund ist ein Ergebnis und kein fehlender Datenpunkt.
-- **MNIST:** Unter (A) erfüllen drei Einstellungen die Vorab-Regel, alle „nur CKA“, alle in allen drei Schichten [findings_mnist]:
+- **MNIST:** Unter (A) erfüllen drei Einstellungen die Vorab-Regel, alle „nur CKA“ [findings_mnist]. Werte: CKA, in Klammern die Bandgrenze; „unentsch.“ = innerhalb der Bootstrap-Breite.
 
 | Einstellung | Accuracy-Verlust | CKA (Band-Min) |
 |---|---|---|
-| Drift 1 d | 0,49 pp | act1 0,937 (0,956), act2 0,954 (0,962), fc3 0,955 (0,956) |
-| Drift 1 Wo | 0,85 pp | – |
-| Default-Peripherie, 1 d | 0,67 pp | – |
+| Drift 1 d | 0,49 pp | act1 0,937 (0,956), act2 0,954 (0,962) außerhalb; fc3 0,955 (0,956) unentsch. |
+| Drift 1 Wo | 0,85 pp | act1 0,909, act2 0,945, fc3 0,945 außerhalb; RSA fc3 unentsch. |
+| Default-Peripherie, 1 d | 0,67 pp | act1 0,935, act2 0,950, fc3 0,948 außerhalb |
 
-  Bei fc3 nach 1 d ist der Abstand zum Band klein (0,0009). Er liegt innerhalb der Unsicherheit der Bandgrenze (Bootstrap-Obergrenze 0,962) [band_bootstrap_mnist]. Unter (B) und (C) verschwinden alle drei Befunde: Der Verlust liegt bei ≤ 0,08 pp, CKA bei ≥ 0,997 [findings_all].
+  Bei fc3 nach 1 d liegt der Abstand zur Grenze (0,0009) innerhalb der Bootstrap-Breite (0,0055) [band_bootstrap_mnist]. Diese Schicht ist daher unentschieden, der Befund stützt sich auf act1 und act2. Neu „unentschieden“ sind die Anhang-Punkte Wan2022 nach 1 d und 2 d (0,93 / 0,92 pp; nur RSA fc3 an der Grenze). Unter (B) und (C) verschwinden alle drei Befunde: Der Verlust liegt bei ≤ 0,08 pp, CKA bei ≥ 0,997 [findings_all].
 
 **3. CKA und RSA sehen den Versatz unterschiedlich.**
 - **Beobachtung:** Unter (A) liegt RSA auf MNIST nicht unter dem Band. Mit 0,990 (act1, 1 d) liegt RSA sogar höher als das Band der Seed-Paare (0,925–0,944). CKA fällt dagegen heraus [sweep_summary_mnist].
@@ -69,7 +70,7 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
   - Gemessen wurde die Relaxation laut Arbeit bis 1 Woche (Abschn. 2.2.2). Die Werte bei 1 Jahr sind also eine Extrapolation des ln t-Fits.
 - **Hauptmodell:** Nur ein ReRAM-Rauschmodell. Wan2022 dient lediglich als Gegenprobe im Anhang [findings_all, Variante „Wan2022“].
 - **Training:** Kein hardware-bewusstes Training. Die Netze sind klein (MLP, 2-Conv-CNN).
-- **Referenzband:** Es stammt aus nur 10 Seed-Paaren (5 Seeds). Der Bootstrap über die Seeds gibt z. B. für act1/CKA (MNIST) ein beobachtetes Minimum von 0,9557, 95 %-Intervall [0,9557; 0,9631] [band_bootstrap_mnist]. Ein Bootstrap des Minimums zeigt nur Unsicherheit nach oben. Befunde nahe der Grenze (fc3, 1 d) sind deshalb unsicher.
+- **Referenzband:** Es stammt aus nur 10 Seed-Paaren (5 Seeds). Der Bootstrap über die Seeds gibt z. B. für act1/CKA (MNIST) ein beobachtetes Minimum von 0,9557, 95 %-Intervall [0,9557; 0,9631] [band_bootstrap_mnist]. Ein Bootstrap des Minimums zeigt nur Unsicherheit nach oben. Die Grenzfall-Regel spiegelt diese Breite nach unten; das ist eine Annahme und nicht aus den Daten abgeleitet.
 - **Reproduzierbarkeit:** Der C++-Zufallsgenerator für Vorwärts- und Peripherie-Rauschen ist nicht seedbar. Der Punkt mit Default-Peripherie ist daher nicht bitgenau reproduzierbar, alle anderen Läufe (ideale Peripherie) schon.
 - **Konverter-Override:** Variante (C) setzt den Konverter am fertigen Objekt. Ob die Fit-Koeffizienten aus Einzelgeräte-Messungen für ein Paar gelten, ist nicht belegt.
 - **Rauschen und Stufen für (C):** Diese Läufe sind zum Zeitpunkt dieses Standes noch nicht abgeschlossen.
@@ -77,7 +78,7 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
 *Reproduktion: README bzw. `notes/step3_design.md`. Abbildungen: `python -m analog_geometry.report_figures`. Tabelle: `results/findings_all.csv`.*
 
 ![Abb. 1](../figures/fig1_drift_variants.png)
-**Abb. 1:** Drift-Zeit für die Varianten (A), (B) und (C), oben jeweils MNIST, unten CIFAR. Δ Accuracy mit 1-pp-Linie, darunter CKA und RSA je Schicht mit Seed-Band. Kreise markieren Befunde nach der Vorab-Regel. Jede Achse hat ihre eigene y-Skala. Der 1-s-Punkt von (B) ist mit (A) identisch, weil ln 1 = 0.
+**Abb. 1:** Drift-Zeit für die Varianten (A), (B) und (C), oben jeweils MNIST, unten CIFAR. Δ Accuracy mit 1-pp-Linie, darunter CKA und RSA je Schicht mit Seed-Band. Kreise markieren Befunde nach der Vorab-Regel, Rauten „unentschiedene“ Einstellungen (Accuracy-Zeile) bzw. Schichten an der Bandgrenze (Geometrie-Zeilen). Jede Achse hat ihre eigene y-Skala. Der 1-s-Punkt von (B) ist mit (A) identisch, weil ln 1 = 0.
 
 ![Abb. 2](../figures/fig2_noise_levels.png)
 **Abb. 2:** Programmierrauschen und Leitwertstufen, (A) und (C). Die Spalten für (C) werden automatisch gefüllt, sobald die CSVs vorliegen.

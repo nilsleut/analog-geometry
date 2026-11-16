@@ -208,3 +208,18 @@ Docstring: „Falcone et al. (In Review)“ (reram.py:172-173), ohne Titel. Verm
 Die Arbeit sagt nur „pre-trained normalized weights are initially mapped into target conductances“ (2.2.1) bzw. „each weight in the normalized
 matrix (ranging from [-1, 1]) is mapped to its corresponding conductance value“ (4.6.1). Einzelgerät oder Paar, Referenz: nicht angegeben -> OFFEN.
 Relaxation gemessen bis 1 Woche (2.2.2), 10 Jahre dort extrapoliert -> unser 1-J-Punkt ist Extrapolation.
+
+## Grenzfall-Regel automatisiert (Nutzer, 2026-11-16)
+Umsetzung analyze.py: `band_edge_tolerance` und `edge_status`. Toleranz je (Datensatz, Schicht, Metrik) = Breite des 95 %-Bootstrap-
+Intervalls der Bandgrenze (results/band_bootstrap_<ds>.csv, kind = post). Status je Schicht: outside (Mittel < Grenze − Tol),
+undecided (|Mittel − Grenze| ≤ Tol), inside. Annahme: Die nur nach oben gemessene Breite wird nach unten gespiegelt.
+Befund = Accuracy ≤ 1 pp und mindestens eine Schicht „outside“ in CKA oder RSA. „unentschieden“ = accuracy-stabil, kein outside,
+aber mindestens eine Schicht „undecided“ in CKA oder RSA. Spalte `category` in findings_*.csv und findings_all.csv; cka_stimc
+erhält ebenfalls einen Status (nur zur Deutung).
+Wechsel gegenüber vorher:
+- MNIST (A) Drift 1 d: bleibt Befund „nur CKA“, aber fc3 jetzt unentschieden (0,9553 vs. 0,9562, Tol 0,0055). Der Befund stützt sich auf act1 und act2.
+- MNIST (A) Drift 1 Wo: bleibt Befund „nur CKA“ (alle 3 Schichten outside); RSA fc3 jetzt unentschieden.
+- MNIST Default-Peripherie 1 d: unverändert Befund „nur CKA“.
+- MNIST Wan2022 1 d / 2 d (Anhang): kein Befund -> unentschieden (0,93 / 0,92 pp; RSA fc3 an der Grenze).
+- CIFAR, (C): keine Kategorie-Wechsel (nirgends accuracy-stabil mit Abweichung).
+Die frühere Einzelfall-Regel (act1 cka_stimc 1 d unentschieden) ist darin enthalten.

@@ -84,11 +84,17 @@ def _panel(ax, sub, xcol, ds, band, metric, xform=None):
             f = g[g["finding"]]
             ax.scatter(f["_x"], f["acc_drop_pp_mean"], s=110, facecolors="none", edgecolors=INK, lw=1.4, zorder=5,
                        label="Befund (Vorab-Regel)")
+            u = g[g["category"] == "unentschieden"]
+            ax.scatter(u["_x"], u["acc_drop_pp_mean"], s=110, marker="D", facecolors="none", edgecolors=INK, lw=1.2,
+                       zorder=5, label="unentschieden (Bandgrenze)")
             ax.axhline(1.0, color=INK2, lw=0.9, ls="--")
         else:
             ax.axhspan(band.loc[layer, f"{metric}_min"], band.loc[layer, f"{metric}_max"], color=color, alpha=0.15, lw=0)
             ax.errorbar(g["_x"], g[f"{metric}_mean"], yerr=g[f"{metric}_std_total"], color=color, marker=marker, ms=4,
                         lw=1.6, capsize=2, label=LAYER_LABEL[li])
+            u = g[g[f"{metric}_status"] == "undecided"]
+            ax.scatter(u["_x"], u[f"{metric}_mean"], s=70, marker="D", facecolors="none", edgecolors=INK, lw=1.0,
+                       zorder=6, label="Schicht an der Bandgrenze (± Bootstrap-Breite)")
 
 
 def _finish(ax):

@@ -63,11 +63,35 @@ def _decompose(g: pd.DataFrame, col: str) -> dict:
             f"{col}_std_within_seed": float(np.sqrt(within)) if pd.notna(within) else np.nan}
 
 
+def band_edge_tolerance(ds: str) -> dict:
+    """Edge tolerance per (layer, metric) = width of the bootstrap 95 % interval of the band minimum (post-ReLU bands).
+
+    Borderline rule (automated 2026-11-16): a mean within +-tolerance of the observed band minimum is "undecided".
+    Assumption: the interval [min_obs, q97.5] only shows upward uncertainty (a bootstrap of a minimum cannot go lower);
+    it is mirrored downward, i.e. the same width is used on both sides. Computes band_bootstrap_<ds>.csv if missing.
+    """
+    p = RESULTS / f"band_bootstrap_{ds}.csv"
+    if not p.exists():
+        band_bootstrap(ds)
+    b = pd.read_csv(p)
+    b = b[b["kind"] == "post"]
+    return {(r.layer, r.metric): float(r["boot_ci_high_97.5"] - r["boot_ci_low_2.5"]) for _, r in b.iterrows()}
+
+
+def edge_status(mean: float, edge: float, tol: float) -> str:
+    if mean < edge - tol:
+        return "outside"
+    if mean <= edge + tol:
+        return "undecided"
+    return "inside"
+
+
 def sweep_summary(ds: str, band: pd.DataFrame, src: str = "analog_sweep", tag: str = "") -> pd.DataFrame:
     # read levels as text: otherwise pandas parses "inf" as float and "8" becomes "8.0"
     d = pd.read_csv(RESULTS / f"{src}_{ds}.csv", keep_default_na=False, na_values=[""],
                     dtype={"levels": str, "drift_mean": str})
     d["acc_drop_pp"] = 100 * (d["acc_digital_full"] - d["acc_full"])
+    edge_tol = band_edge_tolerance(ds)
     rows = []
     for key, g in d.groupby(SETTING_COLS + ["layer"], dropna=False, sort=False):
         row = dict(zip(SETTING_COLS + ["layer"], key))
@@ -77,7 +101,10 @@ def sweep_summary(ds: str, band: pd.DataFrame, src: str = "analog_sweep", tag: s
         b = band.set_index("layer").loc[row["layer"]]
         for m in GEOM:
             row[f"{m}_band_min"] = b[f"{m}_min"]
-            row[f"{m}_outside_band"] = bool(row[f"{m}_mean"] < b[f"{m}_min"])
+            row[f"{m}_outside_band"] = bool(row[f"{m}_mean"] < b[f"{m}_min"])  # raw comparison, kept for continuity
+            tol = edge_tol.get((row["layer"], m), 0.0)
+            row[f"{m}_edge_tol"] = tol
+            row[f"{m}_status"] = edge_status(row[f"{m}_mean"], b[f"{m}_min"], tol)
         rows.append(row)
     s = pd.DataFrame(rows)
     s.insert(0, "dataset", ds)
@@ -85,15 +112,22 @@ def sweep_summary(ds: str, band: pd.DataFrame, src: str = "analog_sweep", tag: s
     s["complete"] = (s["n_seeds"] == 5) & (s["n_reps"] == 3) & (s["n"] == 15)
     # Pre-registered finding rule (notes/step3_design.md, 2026-11-15), evaluated per setting over layers
     keys = [c for c in SETTING_COLS]
-    per = s[s["complete"]].groupby(keys, dropna=False, sort=False).agg(
-        acc_drop=("acc_drop_pp_mean", "first"),
-        any_cka=("cka_outside_band", "any"), any_rsa=("rsa_outside_band", "any")).reset_index()
+    # Borderline rule automated 2026-11-16: a layer counts as outside only if its mean lies below the band edge by more
+    # than the edge tolerance; within +-tolerance it is "undecided" (see band_edge_tolerance).
+    c = s[s["complete"]].assign(_ck=lambda x: x["cka_status"] == "outside", _rk=lambda x: x["rsa_status"] == "outside",
+                                _cu=lambda x: x["cka_status"] == "undecided", _ru=lambda x: x["rsa_status"] == "undecided")
+    per = c.groupby(keys, dropna=False, sort=False).agg(
+        acc_drop=("acc_drop_pp_mean", "first"), any_cka=("_ck", "any"), any_rsa=("_rk", "any"),
+        und_cka=("_cu", "any"), und_rsa=("_ru", "any")).reset_index()
     per["acc_stable"] = per["acc_drop"] <= 1.0
     per["finding"] = per["acc_stable"] & (per["any_cka"] | per["any_rsa"])
     per["finding_metric"] = np.where(~per["finding"], "",
                                      np.where(per["any_cka"] & per["any_rsa"], "CKA+RSA",
                                               np.where(per["any_cka"], "nur CKA", "nur RSA")))
-    s = s.merge(per[keys + ["acc_stable", "finding", "finding_metric"]], on=keys, how="left")
+    per["category"] = np.where(per["finding"], "Befund",
+                               np.where(per["acc_stable"] & (per["und_cka"] | per["und_rsa"]), "unentschieden",
+                                        "kein Befund"))
+    s = s.merge(per[keys + ["acc_stable", "finding", "finding_metric", "category"]], on=keys, how="left")
     s["finding"] = s["finding"].fillna(False).astype(bool)
     s.to_csv(RESULTS / f"sweep_summary{tag}_{ds}.csv", index=False)
     return s
@@ -110,10 +144,13 @@ def findings_table(ds: str, s: pd.DataFrame, tag: str = "") -> pd.DataFrame:
                    acc_drop_pp_std_within_seed=r0["acc_drop_pp_std_within_seed"],
                    acc_stable=bool(r0["acc_drop_pp_mean"] <= 1.0))
         for m in GEOM:
-            row[f"{m}_layers_outside"] = ";".join(g.loc[g[f"{m}_outside_band"], "layer"]) or "-"
+            row[f"{m}_layers_outside"] = ";".join(g.loc[g[f"{m}_status"] == "outside", "layer"]) or "-"
+            row[f"{m}_layers_undecided"] = ";".join(g.loc[g[f"{m}_status"] == "undecided", "layer"]) or "-"
+            row[f"{m}_layers_below_edge_raw"] = ";".join(g.loc[g[f"{m}_outside_band"], "layer"]) or "-"
             row[f"{m}_min_over_layers"] = g[f"{m}_mean"].min()
         row["finding"] = bool(r0["finding"])
         row["finding_metric"] = r0["finding_metric"] if row["finding"] else ""
+        row["category"] = r0["category"]
         rows.append(row)
     t = pd.DataFrame(rows)
     t.insert(0, "dataset", ds)

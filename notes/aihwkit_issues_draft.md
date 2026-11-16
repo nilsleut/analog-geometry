@@ -148,5 +148,8 @@ predicted uniform shift: -2.49% of max|w| (single device)
 
 Setting only the mean drift term to 0 (≈ a reference that drifts along) gives 2.2 pp on CIFAR at 1 day.
 
-**Source check.** The docstring cites "Falcone et al. (In Review)" (reram.py:173) without a title. The published paper we assume this refers to (Falcone et al., Adv. Funct. Mater. 2025, arXiv:2502.04524) states that "pre-trained normalized weights are initially mapped into target conductances" (Sec. 2.2.1) but, as far as we could find, does not say whether one device or a differential pair was used per weight, nor how the zero reference was realised. So we could not tell which assumption matches the measured system.
+**Source questions.**
+1. The docstring cites "Falcone et al. (In Review)" (reram.py:172-173) without a title. Is this arXiv:2502.04524 (Falcone et al., "All-in-One Analog AI Hardware: On-Chip Training and Inference with Conductive-Metal-Oxide/HfOx ReRAM Devices")?
+2. If so, was the measured array read out with a single device per weight against a fixed reference, or as a differential pair? The paper says that "pre-trained normalized weights are initially mapped into target conductances" (Sec. 2.2.1), but we could not find how signed weights or the zero reference were realised.
+3. In that paper the relaxation is characterised up to 1 week (Sec. 2.2.2). The model accepts any `t_inference` and extrapolates the ln(t) fit. Is extrapolation beyond 1 week intended (e.g. the 1-year values in the table above)?
 
