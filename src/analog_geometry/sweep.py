@@ -115,10 +115,14 @@ def preact_reference(name: str, dpre: dict) -> None:
 
 
 def run_sweep(name: str, seeds: list[int], extra_prog: list[float], prog_scales: list[float] | None = None,
-              sweeps: list[str] | None = None, preact: bool = False) -> None:
+              sweeps: list[str] | None = None, preact: bool = False, converter: str = "single_device",
+              times: list[float] | None = None) -> None:
+    """converter != single_device -> results/diffpair_<ds>.csv (gate 2026-11-16); times filters t_inference."""
+    if converter != "single_device" and preact:
+        raise ValueError("--preact only with the default converter")
     _, test = get_datasets(name)
     ev, full = eval_loader(name, test), full_loader(test)
-    out = RESULTS / f"analog_sweep_{name}.csv"
+    out = RESULTS / (f"analog_sweep_{name}.csv" if converter == "single_device" else f"diffpair_{name}.csv")
     pre_out = RESULTS / f"preact_{name}.csv"
     setting_cols = list(ANCHOR.as_row())
     head = ["dataset", "seed", "rep", "noise_seed", "sweep"] + setting_cols + ["layer"]
@@ -158,6 +162,8 @@ def run_sweep(name: str, seeds: list[int], extra_prog: list[float], prog_scales:
             for sweep, s in grid(extra_prog, prog_scales):
                 if sweeps and sweep not in sweeps:
                     continue
+                if times and s.t_inference not in times:
+                    continue
                 row = s.as_row()
                 want_pre = preact and sweep in PREACT_SWEEPS
                 for rep in range(N_REPS):
@@ -168,7 +174,7 @@ def run_sweep(name: str, seeds: list[int], extra_prog: list[float], prog_scales:
                         continue
                     noise_seed = 1000 * seed + rep  # distinct per (trained seed, programming run)
                     t0 = time.time()
-                    m = analog_model(dig, s, noise_seed=noise_seed)
+                    m = analog_model(dig, s, noise_seed=noise_seed, converter=converter)
                     layers = LAYERS[name] + (PRE_LAYERS[name] if need_pre else [])
                     acc_e, acts = collect(m, ev, layers)
                     acc_f = accuracy(m, full)
@@ -213,13 +219,17 @@ def main():
     ap.add_argument("--sweeps", nargs="+", default=None, help="run only these sweeps (e.g. ideal prog_noise)")
     ap.add_argument("--preact", action="store_true",
                     help=f"also record pre-activation metrics for {PREACT_SWEEPS} (results/preact_<ds>.csv)")
+    ap.add_argument("--converter", choices=["single_device", "single_pair"], default="single_device",
+                    help="cmo conductance converter; single_pair writes results/diffpair_<ds>.csv (gate 2026-11-16)")
+    ap.add_argument("--times", type=float, nargs="+", default=None, help="only these t_inference values")
     ap.add_argument("--threads", type=int, default=12)
     args = ap.parse_args()
     torch.set_num_threads(args.threads)
     if args.only != "sweep":
         seed_reference(args.dataset, args.seeds)
     if args.only != "reference":
-        run_sweep(args.dataset, args.seeds, args.extra_prog, args.prog_scales, args.sweeps, args.preact)
+        run_sweep(args.dataset, args.seeds, args.extra_prog, args.prog_scales, args.sweeps, args.preact,
+                  args.converter, args.times)
 
 
 if __name__ == "__main__":

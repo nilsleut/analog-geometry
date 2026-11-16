@@ -63,9 +63,9 @@ def _decompose(g: pd.DataFrame, col: str) -> dict:
             f"{col}_std_within_seed": float(np.sqrt(within)) if pd.notna(within) else np.nan}
 
 
-def sweep_summary(ds: str, band: pd.DataFrame) -> pd.DataFrame:
+def sweep_summary(ds: str, band: pd.DataFrame, src: str = "analog_sweep", tag: str = "") -> pd.DataFrame:
     # read levels as text: otherwise pandas parses "inf" as float and "8" becomes "8.0"
-    d = pd.read_csv(RESULTS / f"analog_sweep_{ds}.csv", keep_default_na=False, na_values=[""],
+    d = pd.read_csv(RESULTS / f"{src}_{ds}.csv", keep_default_na=False, na_values=[""],
                     dtype={"levels": str, "drift_mean": str})
     d["acc_drop_pp"] = 100 * (d["acc_digital_full"] - d["acc_full"])
     rows = []
@@ -95,11 +95,11 @@ def sweep_summary(ds: str, band: pd.DataFrame) -> pd.DataFrame:
                                               np.where(per["any_cka"], "nur CKA", "nur RSA")))
     s = s.merge(per[keys + ["acc_stable", "finding", "finding_metric"]], on=keys, how="left")
     s["finding"] = s["finding"].fillna(False).astype(bool)
-    s.to_csv(RESULTS / f"sweep_summary_{ds}.csv", index=False)
+    s.to_csv(RESULTS / f"sweep_summary{tag}_{ds}.csv", index=False)
     return s
 
 
-def findings_table(ds: str, s: pd.DataFrame) -> pd.DataFrame:
+def findings_table(ds: str, s: pd.DataFrame, tag: str = "") -> pd.DataFrame:
     """One row per complete setting: accuracy loss, layers outside the band, pre-registered rule. -> results/findings_<ds>.csv"""
     rows = []
     for key, g in s[s["complete"]].groupby(SETTING_COLS, dropna=False, sort=False):
@@ -117,7 +117,7 @@ def findings_table(ds: str, s: pd.DataFrame) -> pd.DataFrame:
         rows.append(row)
     t = pd.DataFrame(rows)
     t.insert(0, "dataset", ds)
-    t.to_csv(RESULTS / f"findings_{ds}.csv", index=False)
+    t.to_csv(RESULTS / f"findings{tag}_{ds}.csv", index=False)
     return t
 
 
@@ -317,6 +317,8 @@ def main():
     band_bootstrap(args.dataset)
     isolated_summary(args.dataset)
     main_figure(args.dataset, s, band)
+    if (RESULTS / f"diffpair_{args.dataset}.csv").exists():  # gate 2026-11-16: differential-pair converter
+        findings_table(args.dataset, sweep_summary(args.dataset, band, src="diffpair", tag="_diffpair"), tag="_diffpair")
 
 
 if __name__ == "__main__":

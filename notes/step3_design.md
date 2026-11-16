@@ -151,3 +151,44 @@ Die MNIST-Lesart überträgt sich nicht. Ungeprüfte Vermutung: Bei Faltung ist 
 ortsabhängig (Bildinhalt, Zero-Padding am Rand). Die Zentrierung pro Stimulus entfernt nur eine Konstante pro Bild.
 Für die vollverbundene fc-Schicht gilt die Lesart (reiner Versatz) wie auf MNIST.
 Ohnehin kein Befund nach Vorab-Regel, weil die Accuracy bei allen Drift-Zeiten >= 1 h um mehr als 1 pp fällt.
+
+## GATE vor Schritt 4 (2026-11-16): Physikalische Plausibilität des gleichförmigen Drift-Versatzes
+Code (aihwkit 1.2.0 installiert = master @ 350ff34; reram.py, conductance.py, noise/base.py, tiles/inference.py byte-gleich nach CRLF):
+1. Konverter: ReRamCMONoiseModel verdrahtet `SingleDeviceConductanceConverter` fest (reram.py:222). Kein Argument `g_converter`,
+   obwohl der Docstring eines nennt (reram.py:196; Issue-Entwurf #8). EIN Gerät pro Gewicht, kein G+/G-.
+2. Abbildung: `scaled = (w - w_min) * scale_ratio`, `g = scaled + g_min` mit scale_ratio = (g_max - g_min)/(w_max - w_min) (conductance.py:380).
+   Positive und negative Gewichte liegen auf demselben Gerät; die Null sitzt mitten im Bereich (bei w_min/w_max symmetrisch ~48,6 µS).
+3. Drift: `g_mean = g_prog + (-0.089) * ln(t) * drift_scale` (reram.py:306), unabhängig vom Leitwert (Docstring reram.py:180, aus Messungen),
+   dann Streuung, Lese-Rauschen, clamp auf [g_min, g_max] (reram.py:317). Die Drift wirkt auf das EINE Gerät.
+4. Rückrechnung: `w = w_min + (g - g_min)/scale_ratio` (conductance.py:395). Es gibt kein Referenzgerät, das mitdriftet:
+   Die Null-Referenz (w_min, g_min) ist implizit ideal und driftfrei. Damit wird Δg 1:1 zu Δw = Δg/scale_ratio für ALLE Gewichte.
+   Die Drift-Kompensation (ein skalarer Faktor pro Kachel) kann einen additiven Versatz nicht entfernen.
+Empirisch (scripts/gate_drift_offset.py -> results/gate_drift_offset.csv; 5 Seeds, Durchgang 0, Drift 1 d, alle Kacheln):
+- single_device: Δw_drift (gedriftet - programmiert) ist für positive, negative und ~0-Gewichte gleich, z. B. MNIST fc1
+  −0,00805 / −0,00805 / −0,00805 (sd 0,0073), erwartet −0,00804. CIFAR conv2: −0,0124 / −0,0125 / −0,0123, erwartet −0,0124.
+  In allen Kacheln stimmt der Mittelwert auf < 2 % mit −0,089·ln(t)/scale_ratio überein (~2–2,5 % von max|w|).
+  -> Der Versatz wirkt auf das GEWICHT, nicht auf eine Differenz zweier Geräte.
+- single_pair (G+ - G-, eigener Override, gleiche g-Grenzen): positiv −0,0048, negativ +0,0049, ~0 ≈ 0 (MNIST fc1) -> kein Versatz,
+  sondern Betragsschrumpfung zur Null (das ungenutzte Gerät sitzt bei g_min und wird beim Clamp festgehalten). Die globale
+  Drift-Kompensation gleicht das weitgehend aus (alpha 1,07–1,17; Rest-Mittelwert nach alpha ≤ 0,0012).
+Abgleich mit Issue-Entwurf #6: Der Docstring „logische Null -> g_min“ stammt sichtlich vom Paar-Konverter. Er ist nicht die Ursache,
+beschreibt aber genau die Semantik (Differenz zweier Geräte), unter der sich der gleichförmige Anteil aufheben würde.
+EINORDNUNG: (b) Der gleichförmige Gewichtsversatz ist ein Artefakt der Konverter-Wahl des Modells (ein Gerät pro Gewicht mit
+impliziter, driftfreier Null-Referenz). Physikalisch gemessen ist nur die leitwertunabhängige Relaxation der Einzelgeräte.
+Ob daraus in echter Hardware ein Gewichtsversatz wird, hängt von der (nicht modellierten) Referenz-/Differenzschaltung ab.
+
+### Zusatzlauf Differenzpaar (Gate (b)), Drift 1 d / 1 Wo / 1 J, 5 Seeds × 3 Durchgänge, Vorab-Regel unverändert
+scripts/run_diffpair.sh -> results/diffpair_<ds>.csv, findings_diffpair_<ds>.csv, sweep_summary_diffpair_<ds>.csv.
+Gegenprobe: Paar-Konverter ohne Rauschen = digital (MNIST seed 0: 0.9838 = 0.9838); Default-Pfad unverändert (Drift 1 d, seed 0, rep 0
+bitgleich zur Sweep-CSV, 0.9765).
+| Datensatz | Drift | Δ Acc (pp) Paar | CKA/RSA außerhalb (Paar) | min CKA / RSA über Schichten | Befund | zum Vergleich single_device |
+| MNIST | 1 d  | 0,00 | – | 0,9987 / 0,9978 | nein | 0,49 pp, CKA alle Schichten außerhalb -> Befund „nur CKA“ |
+| MNIST | 1 Wo | 0,02 | – | 0,9983 / 0,9972 | nein | 0,85 pp, Befund „nur CKA“ |
+| MNIST | 1 J  | 0,02 | – | 0,9974 / 0,9956 | nein | 2,54 pp, kein Befund |
+| CIFAR | 1 d  | 1,12 | – | 0,9927 / 0,9857 | nein | 30,0 pp |
+| CIFAR | 1 Wo | 1,41 | – | 0,9908 / 0,9817 | nein | 35,9 pp |
+| CIFAR | 1 J  | 2,16 | – | 0,9862 / 0,9710 | nein | 45,1 pp |
+Folge: Die drei MNIST-Befunde („nur CKA“, Drift 1 d / 1 Wo, Default-Peripherie 1 d) hängen an der Konverter-Wahl. Mit Differenzpaar
+verschwinden sie, ebenso der Großteil des CIFAR-Accuracy-Verlusts. Der CIFAR-Verlust mit Paar (1,1–2,2 pp) liegt in der Größenordnung
+des Ankerpunkts ohne Drift (1,07 pp, single_device); die Geometrie bleibt im Band.
+STOPP vor Schritt 4 (Anweisung Nutzer bei Einordnung (b)).

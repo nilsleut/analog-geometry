@@ -67,6 +67,10 @@ Reproducer:
     c = SingleDeviceConductanceConverter()
     g, p = c.convert_to_conductances(torch.tensor([-1.0, 0.0, 1.0]))
     print(g)   # tensor([ 9.0000, 48.6000, 88.2000]) -> die Null liegt bei 48.6, nicht bei g_min=9
+Nachtrag 2026-11-16 (Gate): Der Docstring ist offenbar von SinglePairConductanceConverter übernommen. Dort stimmt „logische Null -> g_min“,
+und eine gleichförmige Leitwertverschiebung hebt sich in G+ - G- auf. Der Widerspruch ist also nicht die Ursache des Versatzes, beschreibt aber
+genau das Verhalten (Differenz zweier Geräte), das der Konverter NICHT hat. Gemessen (results/gate_drift_offset.csv, Drift 1 d):
+Δw_drift ist für positive, negative und ~0-Gewichte gleich und entspricht −0,089·ln(t)/scale_ratio auf < 2 %.
 
 ## 7. Kein (gefundener) Weg, den RNG des C++-Simulators für Forward-/Peripherie-Rauschen zu seeden  [beobachtet] [Doku/Quelle geprüft 2026-11-15, master @ 350ff34]
 Umgebung: wie 2. Mit `torch.manual_seed` vor program/drift sind alle Läufe mit `forward.is_perfect=True` bitgenau reproduzierbar.
@@ -82,3 +86,15 @@ Prüfung (2026-11-15):
   Mit welchem Seed die Tile-RNG konstruiert wird, habe ich nicht im Tile-Code verfolgt.
 Vorschlag fürs Issue: Seed für das Forward-/IO-Rauschen pro Tile oder global exponieren, oder dokumentieren, dass es zeitbasiert ist.
 Möglicher Workaround (nicht getestet): TorchInferenceRPUConfig, falls dessen Rauschen über torch-RNG läuft.
+
+## 8. ReRamCMONoiseModel: Docstring nennt Argument `g_converter`, `__init__` nimmt es nicht an (Konverter fest verdrahtet)  [aus Code + Verhalten] [besteht auf master @ 350ff34]
+Docstring (reram.py:196): "g_converter: Instantiated class of the conductance converter for a single device per cross-point."
+Code (reram.py:210-222): keine Option `g_converter` in der Signatur; `g_converter = SingleDeviceConductanceConverter(g_max=g_max, g_min=g_min)` ist fest.
+Folge: Ein Differenzpaar-Konverter lässt sich nur durch Überschreiben des Attributs nach der Konstruktion setzen (so in analog.py, Paket nicht gepatcht).
+Ob das Modell mit einem Paar-Konverter physikalisch gültig ist (die Drift-Fits stammen aus Einzelgeräten), sagt die Doku nicht.
+Reproducer (geprüft 2026-11-16, aihwkit 1.2.0):
+    from aihwkit.inference.converter.conductance import SinglePairConductanceConverter
+    from aihwkit.inference.noise.reram import ReRamCMONoiseModel
+    print(type(ReRamCMONoiseModel().g_converter).__name__)          # SingleDeviceConductanceConverter
+    ReRamCMONoiseModel(g_converter=SinglePairConductanceConverter())  # TypeError: unexpected keyword argument 'g_converter'
+

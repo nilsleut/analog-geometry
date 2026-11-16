@@ -1,0 +1,4 @@
+dataset,sweep,device,prog_scale,drift_scale,read_scale,acceptance,drift_mean,levels,t_inference,periphery,acc_drop_pp_mean,acc_drop_pp_std_between_seed,acc_drop_pp_std_within_seed,acc_stable,cka_layers_outside,cka_min_over_layers,rsa_layers_outside,rsa_min_over_layers,cka_stimc_layers_outside,cka_stimc_min_over_layers,finding,finding_metric
+cifar10,drift_time,cmo,1.0,1.0,1.0,2.0,True,inf,86400.0,ideal,1.1173333333333337,0.3446366847049869,0.3529589211225578,False,-,0.9926745304491161,-,0.9857447854645651,-,0.9926768900935928,False,
+cifar10,drift_time,cmo,1.0,1.0,1.0,2.0,True,inf,604800.0,ideal,1.4093333333333342,0.44627719338246746,0.37761532454778945,False,-,0.9908350692616952,-,0.9816557521281718,-,0.9908488720459484,False,
+cifar10,drift_time,cmo,1.0,1.0,1.0,2.0,True,inf,31536000.0,ideal,2.1599999999999993,0.7111844580229042,0.5429548784199297,False,-,0.9862426695232678,-,0.9710417896533161,-,0.986286982933445,False,

@@ -9,6 +9,7 @@ from dataclasses import dataclass, asdict
 
 import torch
 import torch.nn as nn
+from aihwkit.inference.converter.conductance import SinglePairConductanceConverter
 from aihwkit.inference.noise.reram import ReRamCMONoiseModel, ReRamWan2022NoiseModel
 from aihwkit.nn.conversion import convert_to_analog
 from aihwkit.simulator.configs import InferenceRPUConfig
@@ -71,7 +72,16 @@ class AnalogSetting:
         return d
 
 
-def make_rpu_config(s: AnalogSetting) -> InferenceRPUConfig:
+CONVERTERS = ("single_device", "single_pair")
+
+
+def make_rpu_config(s: AnalogSetting, converter: str = "single_device") -> InferenceRPUConfig:
+    """`converter` (cmo only): "single_device" = aihwkit default (one device per weight, w_min -> g_min);
+    "single_pair" = differential pair G+ - G- (SinglePairConductanceConverter), same g range. ReRamCMONoiseModel
+    hard-codes SingleDeviceConductanceConverter in __init__ (no g_converter argument in 1.2.0 / master@350ff34),
+    so the pair converter is set on the instance afterwards (own code, package not patched). Gate 2026-11-16."""
+    if converter not in CONVERTERS:
+        raise ValueError(converter)
     cfg = InferenceRPUConfig()
     if s.device == "cmo":
         extra = {}
@@ -84,8 +94,12 @@ def make_rpu_config(s: AnalogSetting) -> InferenceRPUConfig:
                           acceptance_range=s.acceptance, **extra)
         if nm.acceptance_range != s.acceptance:  # guard against the silent fallback
             raise ValueError(f"acceptance {s.acceptance} not in {list(nm.coeff_dict)}")
+        if converter == "single_pair":
+            nm.g_converter = SinglePairConductanceConverter(g_max=nm.g_max, g_min=nm.g_min)
         cfg.noise_model = nm
     elif s.device == "wan2022":
+        if converter != "single_device":
+            raise ValueError("converter option is for cmo only")
         cfg.noise_model = QuantizedWan2022(levels=s.levels, noise_scale=s.prog_scale)
     else:
         raise ValueError(s.device)
@@ -96,9 +110,9 @@ def make_rpu_config(s: AnalogSetting) -> InferenceRPUConfig:
     return cfg
 
 
-def analog_model(digital: nn.Module, s: AnalogSetting, noise_seed: int) -> nn.Module:
+def analog_model(digital: nn.Module, s: AnalogSetting, noise_seed: int, converter: str = "single_device") -> nn.Module:
     """Convert, program and drift. `noise_seed` fixes the device-noise draw."""
-    m = convert_to_analog(copy.deepcopy(digital), make_rpu_config(s))
+    m = convert_to_analog(copy.deepcopy(digital), make_rpu_config(s, converter))
     m.eval()
     torch.manual_seed(noise_seed)
     m.program_analog_weights()
