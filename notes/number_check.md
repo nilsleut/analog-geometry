@@ -1,7 +1,7 @@
 # Zahlenprüfung report/report.md und report/summary_en.md -> results/*.csv
 
 Erzeugt von `scripts/check_report_numbers.py` (feste Zuordnung Zahl -> CSV-Abfrage, in Reihenfolge des Texts).
-Geprüft: jede Dezimalzahl, Vorzeichen ignoriert, gerundet auf die angezeigten Nachkommastellen (Report: Dezimalkomma; englische Zusammenfassung: Dezimalpunkt, Versionsnummern ausgenommen).
+Geprüft: jede Dezimalzahl, Vorzeichen ignoriert, gerundet auf die angezeigten Nachkommastellen (Report: Dezimalkomma; englische Zusammenfassung: Dezimalpunkt, Versionsnummern und arXiv-Kennungen ausgenommen).
 Nicht geprüft: Ganzzahlen (Seeds, Paare, Stufen, Skalen, Zeilennummern im Code).
 Bei „Obergrenze ≤“ bzw. „Untergrenze ≥“ steht im Text eine Schranke; geprüft wird der gerundete Extremwert.
 
@@ -140,22 +140,22 @@ Bei „Obergrenze ≤“ bzw. „Untergrenze ≥“ steht im Text eine Schranke;
 
 | Zeile | Zahl | Status | Datei | Abfrage = Wert | Kontext |
 |---|---|---|---|---|---|
-| 8 | 98.42 | ok | baseline_summary.csv | mnist test_acc_mean ×100 = 98.416 | orks: MLP 784-256-256-10 on MNIST (98.42 % test accu |
-| 8 | 76.37 | ok | baseline_summary.csv | cifar10 test_acc_mean ×100 = 76.374 | acy) and a 2-conv CNN on CIFAR-10 (76.37 %); 5 train |
-| 16 | 2.5 | ok | gate_drift_offset.csv | (A) max_Kachel |Δw|/max|w| in % (Mittel über Seeds) = 2.53171 | a uniform weight offset of about 2–2.5 % of max/w/ |
-| 16 | 0.94 | ok | gate_drift_offset.csv | (A) min alpha = 0.944573 | not remove an additive offset (α = 0.94–1.00). On C |
-| 16 | 1.00 | ok | gate_drift_offset.csv | (A) max alpha = 1.00162 | emove an additive offset (α = 0.94–1.00). On CIFAR |
-| 16 | 30.0 | ok | findings_all.csv | variant=A, cifar10, drift_time, {'t_inference': 86400.0} -> acc_drop_pp_mean = 30.022 | = 0.94–1.00). On CIFAR this costs 30.0 pp after 1 |
-| 16 | 1.1 | ok | findings_all.csv | variant=C, cifar10, drift_time, {'t_inference': 86400.0} -> acc_drop_pp_mean = 1.11733 | costs 30.0 pp after 1 day, versus 1.1 pp with a d |
-| 16 | 2.2 | ok | findings_all.csv | variant=B (2a), cifar10, drift_no_mean, {'t_inference': 86400.0} -> acc_drop_pp_mean = 2.24267 | p with a differential pair (C) and 2.2 pp with a d |
-| 17 | 0.49 | ok | findings_all.csv | variant=A, mnist, drift_time, {'t_inference': 86400.0} -> acc_drop_pp_mean = 0.491333 | nder (A), MNIST drift after 1 day (0.49 pp) and 1 w |
-| 17 | 0.85 | ok | findings_all.csv | variant=A, mnist, drift_time, {'t_inference': 604800.0} -> acc_drop_pp_mean = 0.846 | after 1 day (0.49 pp) and 1 week (0.85 pp) and the |
-| 17 | 0.67 | ok | findings_all.csv | variant=A, mnist, periphery_default, {} -> acc_drop_pp_mean = 0.665333 | ) and the default-periphery point (0.67 pp) meet th |
-| 17 | 0.937 | ok | sweep_summary_mnist.csv | drift_time, act1, {'t_inference': 86400.0} -> cka_mean = 0.937299 | r example, CKA in layer 1 drops to 0.937 against a b |
-| 17 | 0.956 | ok | reference_band_mnist.csv | act1 -> cka_min = 0.955687 | to 0.937 against a band minimum of 0.956. Under (B) |
-| 17 | 0.08 | ok | findings_all.csv | MNIST B + C(Drift): max acc_drop_pp_mean (Obergrenze ≤) = 0.0813333 | nd (C) all three disappear (loss ≤ 0.08 pp, CKA ≥ 0 |
-| 17 | 0.997 | ok | findings_all.csv | MNIST B + C(Drift): min cka_min_over_layers (Untergrenze ≥) = 0.997403 | e disappear (loss ≤ 0.08 pp, CKA ≥ 0.997). On CIFAR |
-| 17 | 1.07 | ok | findings_all.csv | variant=A, cifar10, prog_noise, {'prog_scale': 1.0} -> acc_drop_pp_mean = 1.06667 | without drift offset already loses 1.07 pp; for (C) |
-| 18 | 0.990 | ok | sweep_summary_mnist.csv | drift_time, act1, {'t_inference': 86400.0} -> rsa_mean = 0.990035 | MNIST does not leave the band; at 0.990 (layer 1, 1 |
-| 18 | 0.925 | ok | reference_band_mnist.csv | act1 -> rsa_min = 0.925107 | is even above the seed-pair band (0.925–0.944), whi |
-| 18 | 0.944 | ok | reference_band_mnist.csv | act1 -> rsa_max = 0.944407 | en above the seed-pair band (0.925–0.944), while CKA |
+| 10 | 98.42 | ok | baseline_summary.csv | mnist test_acc_mean ×100 = 98.416 | orks: MLP 784-256-256-10 on MNIST (98.42 % test accu |
+| 10 | 76.37 | ok | baseline_summary.csv | cifar10 test_acc_mean ×100 = 76.374 | acy) and a 2-conv CNN on CIFAR-10 (76.37 %); 5 train |
+| 18 | 2.5 | ok | gate_drift_offset.csv | (A) max_Kachel |Δw|/max|w| in % (Mittel über Seeds) = 2.53171 | a uniform weight offset of about 2–2.5 % of max/w/ |
+| 18 | 0.94 | ok | gate_drift_offset.csv | (A) min alpha = 0.944573 | not remove an additive offset (α = 0.94–1.00). On C |
+| 18 | 1.00 | ok | gate_drift_offset.csv | (A) max alpha = 1.00162 | emove an additive offset (α = 0.94–1.00). On CIFAR |
+| 18 | 30.0 | ok | findings_all.csv | variant=A, cifar10, drift_time, {'t_inference': 86400.0} -> acc_drop_pp_mean = 30.022 | = 0.94–1.00). On CIFAR this costs 30.0 pp after 1 |
+| 18 | 1.1 | ok | findings_all.csv | variant=C, cifar10, drift_time, {'t_inference': 86400.0} -> acc_drop_pp_mean = 1.11733 | costs 30.0 pp after 1 day, versus 1.1 pp with a d |
+| 18 | 2.2 | ok | findings_all.csv | variant=B (2a), cifar10, drift_no_mean, {'t_inference': 86400.0} -> acc_drop_pp_mean = 2.24267 | p with a differential pair (C) and 2.2 pp with a d |
+| 19 | 0.49 | ok | findings_all.csv | variant=A, mnist, drift_time, {'t_inference': 86400.0} -> acc_drop_pp_mean = 0.491333 | nder (A), MNIST drift after 1 day (0.49 pp) and 1 w |
+| 19 | 0.85 | ok | findings_all.csv | variant=A, mnist, drift_time, {'t_inference': 604800.0} -> acc_drop_pp_mean = 0.846 | after 1 day (0.49 pp) and 1 week (0.85 pp) and the |
+| 19 | 0.67 | ok | findings_all.csv | variant=A, mnist, periphery_default, {} -> acc_drop_pp_mean = 0.665333 | ) and the default-periphery point (0.67 pp) meet th |
+| 19 | 0.937 | ok | sweep_summary_mnist.csv | drift_time, act1, {'t_inference': 86400.0} -> cka_mean = 0.937299 | r example, CKA in layer 1 drops to 0.937 against a b |
+| 19 | 0.956 | ok | reference_band_mnist.csv | act1 -> cka_min = 0.955687 | to 0.937 against a band minimum of 0.956. Under (B) |
+| 19 | 0.08 | ok | findings_all.csv | MNIST B + C(Drift): max acc_drop_pp_mean (Obergrenze ≤) = 0.0813333 | nd (C) all three disappear (loss ≤ 0.08 pp, CKA ≥ 0 |
+| 19 | 0.997 | ok | findings_all.csv | MNIST B + C(Drift): min cka_min_over_layers (Untergrenze ≥) = 0.997403 | e disappear (loss ≤ 0.08 pp, CKA ≥ 0.997). On CIFAR |
+| 19 | 1.07 | ok | findings_all.csv | variant=A, cifar10, prog_noise, {'prog_scale': 1.0} -> acc_drop_pp_mean = 1.06667 | without drift offset already loses 1.07 pp; for (C) |
+| 20 | 0.990 | ok | sweep_summary_mnist.csv | drift_time, act1, {'t_inference': 86400.0} -> rsa_mean = 0.990035 | MNIST does not leave the band; at 0.990 (layer 1, 1 |
+| 20 | 0.925 | ok | reference_band_mnist.csv | act1 -> rsa_min = 0.925107 | is even above the seed-pair band (0.925–0.944), whi |
+| 20 | 0.944 | ok | reference_band_mnist.csv | act1 -> rsa_max = 0.944407 | en above the seed-pair band (0.925–0.944), while CKA |

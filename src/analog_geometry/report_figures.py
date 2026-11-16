@@ -243,7 +243,7 @@ def fig0():
     axes[0].set_ylabel("accuracy loss [pp]", fontsize=12)
     fig.legend(*axes[0].get_legend_handles_labels(), loc="upper center", ncol=3, frameon=False, fontsize=11,
                bbox_to_anchor=(0.5, 0.905))
-    fig.suptitle("Drift damage in aihwkit's CMO ReRAM model depends on the conductance converter", fontsize=14,
+    fig.suptitle("Drift damage in aihwkit's CMO ReRAM model depends on the converter/reference assumption", fontsize=14,
                  color=INK, y=0.985)
     fig.text(0.5, 0.012, "mean ± SD over 5 seeds × 3 programming runs · digital training, ideal periphery, "
              "global drift compensation · aihwkit 1.2.0", ha="center", fontsize=11, color=INK2)

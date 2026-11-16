@@ -1,4 +1,6 @@
-# Drift in aihwkit's CMO ReRAM inference model: the converter assumption decides
+# Drift in aihwkit's CMO ReRAM inference model: the converter/reference assumption decides
+
+Nils Leutenegger · independent researcher, Zug, Switzerland · nils.leutenegger@gmail.com · arXiv: 2608.12408, 2611.15533
 
 *One-page summary · 16 Nov 2026 · aihwkit 1.2.0 · repository: [LINK-TO-REPO] · related aihwkit issue: [LINK-TO-ISSUE]*
 
@@ -8,7 +10,7 @@
 - Networks: MLP 784-256-256-10 on MNIST (98.42 % test accuracy) and a 2-conv CNN on CIFAR-10 (76.37 %); 5 training seeds, digital training, no hardware-aware training.
 - aihwkit `ReRamCMONoiseModel` (acceptance range 2 %), ideal periphery, global drift compensation; 3 programming runs per seed, so mean ± SD over 15 runs.
 - Metrics: accuracy loss vs. the digital net of the same seed; linear CKA and RSA per layer vs. a reference band spanned by 10 pairs of digital seeds.
-- Pre-registered rule: a *finding* is a setting with ≤ 1 pp accuracy loss and CKA or RSA outside the band in at least one layer. Variants: (A) single device, fixed reference (aihwkit default); (B) single device, drifting reference; (C) differential pair.
+- Decision rule (fixed before the CIFAR runs, after the MNIST results; see report): a *finding* is a setting with ≤ 1 pp accuracy loss and CKA or RSA outside the band in at least one layer. Variants: (A) single device, fixed reference (aihwkit default); (B) single device, drifting reference; (C) differential pair.
 
 ![Accuracy loss vs. drift time for variants A, B, C](../figures/fig0_headline.png)
 

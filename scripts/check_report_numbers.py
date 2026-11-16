@@ -319,6 +319,7 @@ SUMMARY_SPEC = [
 ]
 
 
+ARXIV_ID = re.compile(r"\d{4}\.\d{4,5}")
 PATTERNS = {",": r"\d+,\d+", ".": r"(?<!\d)(?<!\d\.)\d+\.\d+(?!\d)(?!\.\d)"}  # "." form skips versions like 1.2.0
 
 
@@ -326,7 +327,8 @@ def check(spec, path, sep=","):
     """Pair every decimal number in `path` (in order) with `spec`; returns (rows, n_found, n_bad, n_unused)."""
     text = path.read_text(encoding="utf-8")
     found = [(ln, m.group(0), line[max(0, m.start() - 35):m.end() + 12].replace("|", "/").strip())
-             for ln, line in enumerate(text.splitlines(), 1) for m in re.finditer(PATTERNS[sep], line)]
+             for ln, line in enumerate(text.splitlines(), 1) for m in re.finditer(PATTERNS[sep], line)
+             if not (sep == "." and ARXIV_ID.fullmatch(m.group(0)))]  # arXiv identifiers are not measurements
     rows, n_bad = [], 0
     for i, (ln, tok, ctx) in enumerate(found):
         norm = tok.replace(".", ",") if sep == "." else tok
@@ -359,7 +361,7 @@ def main(spec=None, summary_spec=None):
              "",
              "Erzeugt von `scripts/check_report_numbers.py` (feste Zuordnung Zahl -> CSV-Abfrage, in Reihenfolge des Texts).",
              "Geprüft: jede Dezimalzahl, Vorzeichen ignoriert, gerundet auf die angezeigten Nachkommastellen "
-             "(Report: Dezimalkomma; englische Zusammenfassung: Dezimalpunkt, Versionsnummern ausgenommen).",
+             "(Report: Dezimalkomma; englische Zusammenfassung: Dezimalpunkt, Versionsnummern und arXiv-Kennungen ausgenommen).",
              "Nicht geprüft: Ganzzahlen (Seeds, Paare, Stufen, Skalen, Zeilennummern im Code).",
              "Bei „Obergrenze ≤“ bzw. „Untergrenze ≥“ steht im Text eine Schranke; geprüft wird der gerundete Extremwert."]
     total_bad = 0
