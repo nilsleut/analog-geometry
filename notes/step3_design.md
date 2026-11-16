@@ -192,3 +192,19 @@ Folge: Die drei MNIST-Befunde („nur CKA“, Drift 1 d / 1 Wo, Default-Peripher
 verschwinden sie, ebenso der Großteil des CIFAR-Accuracy-Verlusts. Der CIFAR-Verlust mit Paar (1,1–2,2 pp) liegt in der Größenordnung
 des Ankerpunkts ohne Drift (1,07 pp, single_device); die Geometrie bleibt im Band.
 STOPP vor Schritt 4 (Anweisung Nutzer bei Einordnung (b)).
+
+## Entscheidung nach dem Gate (Nutzer, 2026-11-16)
+- Hauptlauf bleibt (A) Einzelgerät, wie vorab festgelegt. Im Report steht offen, dass die Konverter-Frage erst nachträglich aufkam.
+- Drei Varianten: (A) Einzelgerät + driftfreie Referenz, (B) Einzelgerät + mitdriftende Referenz (= 2a), (C) Differenzpaar.
+- Neue Kernaussage: Der Drift-Schaden hängt an der Konverter-Annahme. Die Geometrie ist die zweite Ebene.
+- Volles Raster für (C) (Rauschen, Stufen; MNIST, CIFAR) über Nacht: scripts/run_diffpair_grid.sh, Commit nach jedem Sweep, nur diffpair-Dateien.
+### (B) = 2a? (scripts/check_b_equivalence.py -> results/check_b_equivalence.csv)
+Gleiche Zufallszahlen in A und 2a (der Mittelwert-Term verbraucht keine). Abweichung von (w_A − Δg/sr) gegenüber w_2a nur durch den Clamp auf [g_min, g_max]:
+Anteil abweichender Gewichte (> 1e-4·max|w|) 0,2 % / 0,7 % (MNIST / CIFAR, 1 d), 3,4 % / 5,8 % (1 J); mittlere Abweichung ≤ 0,006 % von max|w|.
+Nicht in 2a: das Eigenrauschen eines realen Referenzgeräts. -> „nahezu äquivalent“, nicht exakt.
+### Quellenprüfung (Punkt 5)
+Docstring: „Falcone et al. (In Review)“ (reram.py:172-173), ohne Titel. Vermutete Veröffentlichung (eigene Zuordnung): Falcone et al.,
+„All-in-One Analog AI Hardware: On-Chip Training and Inference with CMO/HfOx ReRAM Devices“, Adv. Funct. Mater. 2025, arXiv:2502.04524.
+Die Arbeit sagt nur „pre-trained normalized weights are initially mapped into target conductances“ (2.2.1) bzw. „each weight in the normalized
+matrix (ranging from [-1, 1]) is mapped to its corresponding conductance value“ (4.6.1). Einzelgerät oder Paar, Referenz: nicht angegeben -> OFFEN.
+Relaxation gemessen bis 1 Woche (2.2.2), 10 Jahre dort extrapoliert -> unser 1-J-Punkt ist Extrapolation.
