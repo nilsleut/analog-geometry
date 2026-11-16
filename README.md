@@ -1,6 +1,6 @@
 # analog-geometry
 
-`Repository: https://github.com/nilsleut/analog-geometry`
+Repository: https://github.com/nilsleut/analog-geometry
 
 Dieses Projekt untersucht, wie Nichtidealitäten der analogen In-Memory-Inferenz die Repräsentationsgeometrie kleiner, digital trainierter Netze verändern. Das sind Programmierrauschen, endliche Leitwertstufen und Drift (IBM aihwkit, `ReRamCMONoiseModel`). Gemessen werden Accuracy sowie linear CKA und RSA je Schicht, jeweils gegen ein Referenzband aus 10 Paaren digitaler Seeds. Die Einordnung folgt einer vorab festgelegten Befund-Regel.
 
