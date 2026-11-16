@@ -43,13 +43,14 @@ WAN_T = [1.0, DAY, 2 * DAY]
 N_REPS = 3                                          # independent programming runs per trained seed
 
 
-def grid(extra_prog: list[float] = (), prog_scales: list[float] | None = None) -> list[tuple[str, AnalogSetting]]:
+def grid(extra_prog: list[float] = (), prog_scales: list[float] | None = None,
+         levels: list[int | None] | None = None) -> list[tuple[str, AnalogSetting]]:
     from dataclasses import replace
     off = dict(prog_scale=0.0, drift_scale=0.0, read_scale=0.0, t_inference=0.0)
     g = [("ideal", replace(ANCHOR, **off))]  # sanity: must reproduce digital exactly
     scales = list(PROG_SCALES if prog_scales is None else prog_scales) + list(extra_prog)
     g += [("prog_noise", replace(ANCHOR, prog_scale=float(p))) for p in scales]
-    g += [("levels", replace(ANCHOR, levels=k, **off)) for k in LEVELS]
+    g += [("levels", replace(ANCHOR, levels=k, **off)) for k in (LEVELS if levels is None else levels)]
     g += [("drift_time", replace(ANCHOR, t_inference=t)) for t in T_INF]
     g += [("wan2022_time", AnalogSetting(device="wan2022", t_inference=t, periphery="ideal")) for t in WAN_T]
     g += [("periphery_default", replace(ANCHOR, t_inference=DAY, periphery="default"))]
@@ -116,13 +117,17 @@ def preact_reference(name: str, dpre: dict) -> None:
 
 def run_sweep(name: str, seeds: list[int], extra_prog: list[float], prog_scales: list[float] | None = None,
               sweeps: list[str] | None = None, preact: bool = False, converter: str = "single_device",
-              times: list[float] | None = None) -> None:
-    """converter != single_device -> results/diffpair_<ds>.csv (gate 2026-11-16); times filters t_inference."""
+              times: list[float] | None = None, levels: list[int | None] | None = None,
+              out_tag: str | None = None) -> None:
+    """converter != single_device -> results/diffpair_<ds>.csv (gate 2026-11-16); times filters t_inference.
+    levels overrides the levels grid; out_tag writes results/<out_tag>_<ds>.csv (fairness check 2026-11-16)."""
     if converter != "single_device" and preact:
         raise ValueError("--preact only with the default converter")
     _, test = get_datasets(name)
     ev, full = eval_loader(name, test), full_loader(test)
     out = RESULTS / (f"analog_sweep_{name}.csv" if converter == "single_device" else f"diffpair_{name}.csv")
+    if out_tag:
+        out = RESULTS / f"{out_tag}_{name}.csv"
     pre_out = RESULTS / f"preact_{name}.csv"
     setting_cols = list(ANCHOR.as_row())
     head = ["dataset", "seed", "rep", "noise_seed", "sweep"] + setting_cols + ["layer"]
@@ -159,7 +164,7 @@ def run_sweep(name: str, seeds: list[int], extra_prog: list[float], prog_scales:
             # fixed digital references, computed once per seed (identical results, less work per run)
             dgram = {k: _centered_gram(v) for k, v in dacts.items()}
             dgram_sc = {k: _centered_gram(stimcenter(v)) for k, v in dacts.items()}
-            for sweep, s in grid(extra_prog, prog_scales):
+            for sweep, s in grid(extra_prog, prog_scales, levels):
                 if sweeps and sweep not in sweeps:
                     continue
                 if times and s.t_inference not in times:
@@ -222,6 +227,8 @@ def main():
     ap.add_argument("--converter", choices=["single_device", "single_pair"], default="single_device",
                     help="cmo conductance converter; single_pair writes results/diffpair_<ds>.csv (gate 2026-11-16)")
     ap.add_argument("--times", type=float, nargs="+", default=None, help="only these t_inference values")
+    ap.add_argument("--levels", type=int, nargs="+", default=None, help="override the levels grid (e.g. 15 31)")
+    ap.add_argument("--out-tag", default=None, help="write results/<tag>_<ds>.csv instead (fairness check)")
     ap.add_argument("--threads", type=int, default=12)
     args = ap.parse_args()
     torch.set_num_threads(args.threads)
@@ -229,7 +236,7 @@ def main():
         seed_reference(args.dataset, args.seeds)
     if args.only != "reference":
         run_sweep(args.dataset, args.seeds, args.extra_prog, args.prog_scales, args.sweeps, args.preact,
-                  args.converter, args.times)
+                  args.converter, args.times, args.levels, args.out_tag)
 
 
 if __name__ == "__main__":

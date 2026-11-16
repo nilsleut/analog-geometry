@@ -85,6 +85,47 @@ def _alpha(conv, agg):
     return getattr(g[g.converter == conv].alpha, agg)()
 
 
+def FF(ds, sweep, col="acc_drop_pp_mean", **flt):
+    """findings_fairness_<ds>.csv row ((A) at matched resolution)."""
+    f = f"findings_fairness_{ds}.csv"
+    return f, f"{sweep}, {flt} -> {col}", lambda: sel(f, col, sweep=sweep, **flt)
+
+
+def _tiles(col, agg):
+    def fn():
+        t = csv("fairness_tiles.csv").copy()
+        t["ratio"] = t.A_prog1 / t.C_prog1
+        return getattr(t[col], agg)()
+    return "fairness_tiles.csv", f"{col} ({agg} over tiles, seeds); ratio = A_prog1/C_prog1", fn
+
+
+def _r_w(ds):
+    def fn():
+        t = csv("fairness_tiles.csv")
+        t = t[t.dataset == ds]
+        return float((t.r * t.n_weights).sum() / t.n_weights.sum())
+    return "fairness_tiles.csv", f"{ds}: r weighted by n_weights", fn
+
+
+def _match(ds, sc):
+    return "fairness_match.csv", f"{ds}, s_C={sc} -> s_A_matched", \
+        lambda: sel("fairness_match.csv", "s_A_matched", dataset=ds, s_C=sc)
+
+
+def _match_tile(ds, sc, agg):
+    def fn():
+        import numpy as np
+        s = csv("fairness_sigma.csv")
+        s = s[s.dataset == ds]
+        vals = []
+        for _, g in s.groupby("tile"):
+            a = g[g.converter == "single_device"].groupby("prog_scale").rms_err_rel.mean()
+            c = g[g.converter == "single_pair"].groupby("prog_scale").rms_err_rel.mean()
+            vals.append(float(np.interp(c[sc], a.values, a.index.values)))
+        return getattr(np, agg)(vals)
+    return "fairness_sigma.csv", f"{ds}, s_C={sc}: per-tile matched s_A, {agg} over tiles", fn
+
+
 def _b(ds, t, col):
     b = csv("check_b_equivalence.csv")
     return 100 * b[(b.dataset == ds) & (b.t_inference == t)][col].mean()
@@ -218,6 +259,28 @@ SPEC = [
     ("0,24", F("A", "cifar10", "levels", levels="64")),
     ("0,26", F("C", "mnist", "levels", levels="8")),
     ("0,46", F("A", "mnist", "levels", levels="8")),
+    # fairness check (C) vs (A)
+    ("2,4", _tiles("ratio", "min")),
+    ("4,9", _tiles("ratio", "max")),
+    ("1,73", _r_w("mnist")),
+    ("1,75", _r_w("cifar10")),
+    ("3,54", FF("cifar10", "prog_noise", prog_scale=2.13)),
+    ("2,13", _match("cifar10", 8.0)),
+    ("4,89", F("C", "cifar10", "prog_noise", prog_scale=8.0)),
+    ("0,89", FF("mnist", "prog_noise", prog_scale=7.34)),
+    ("10,4", FF("mnist", "prog_noise", prog_scale=14.68)),
+    ("7,34", _match("mnist", 32.0)),
+    ("14,68", _match("mnist", 64.0)),
+    ("1,23", F("C", "mnist", "prog_noise", prog_scale=32.0)),
+    ("17,4", F("C", "mnist", "prog_noise", prog_scale=64.0)),
+    ("1,79", _match_tile("cifar10", 8.0, "min")),
+    ("3,23", _match_tile("cifar10", 8.0, "max")),
+    ("7,90", FF("cifar10", "levels", levels="13")),
+    ("1,61", FF("cifar10", "levels", levels="27")),
+    ("8,44", F("C", "cifar10", "levels", levels="8")),
+    ("1,50", F("C", "cifar10", "levels", levels="16")),
+    ("0,14", FF("mnist", "levels", levels="13")),
+    ("0,26", F("C", "mnist", "levels", levels="8")),
     # line 73: limits, bootstrap
     ("0,9557", B("mnist", "act1", "band_min_observed")),
     ("0,9557", B("mnist", "act1", "boot_ci_low_2.5")),

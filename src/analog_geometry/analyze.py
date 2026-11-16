@@ -356,6 +356,8 @@ def main():
     main_figure(args.dataset, s, band)
     if (RESULTS / f"diffpair_{args.dataset}.csv").exists():  # gate 2026-11-16: differential-pair converter
         findings_table(args.dataset, sweep_summary(args.dataset, band, src="diffpair", tag="_diffpair"), tag="_diffpair")
+    if (RESULTS / f"fairness_{args.dataset}.csv").exists():  # fairness check 2026-11-16: (A) at matched resolution
+        findings_table(args.dataset, sweep_summary(args.dataset, band, src="fairness", tag="_fairness"), tag="_fairness")
 
 
 if __name__ == "__main__":

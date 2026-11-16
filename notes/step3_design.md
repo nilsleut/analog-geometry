@@ -232,3 +232,56 @@ Die frühere Einzelfall-Regel (act1 cka_stimc 1 d unentschieden) ist darin entha
   (MNIST Skala 32: 1,23 vs. 69,6 pp; Skala 64: 17,4 vs. 86,2 pp; CIFAR Skala 8: 4,89 vs. 32,0 pp) und bei den Stufen
   etwa halb so empfindlich (CIFAR 8 Stufen: 8,44 vs. 18,3 pp). Ursache nicht untersucht.
 - Report Abschnitt 4 ergänzt, Grenzen-Punkt „noch nicht abgeschlossen“ entfernt. Zahlenprüfung: 96 Zahlen, 0 Probleme.
+
+## Fairness-Check (C) vs. (A) bei Rauschen und Stufen (16.11.2026)
+
+Frage: Ist (C) bei Rauschen/Stufen robuster, weil (C) pro Gewicht eine feinere effektive Auflösung hat? Kernaussage
+bis zur Klärung unverändert.
+
+**1. Analytisch (aihwkit 1.2.0, CMO, Akzeptanz 2 %, `scripts/fairness_resolution.py` -> `results/fairness_tiles.csv`)**
+
+| Größe | (A) Einzelgerät | (C) Differenzpaar |
+|---|---|---|
+| Abbildung | w_min..w_max -> g_min..g_max (9..88,2 µS), 1 Gerät | ±max\|w\| -> G⁺−G⁻, je Gerät g_min..g_max, eines immer auf g_min |
+| Leitwert pro max\|w\| | 79,2/r µS, r = (w_max−w_min)/max\|w\| = 1,73 (MNIST) / 1,75 (CIFAR), gewichtet nach Anzahl Gewichte | 79,2 µS |
+| Leitwert bei w = 0 | 42,7–65,0 µS (Bereichsmitte) | 9 µS (beide Geräte auf g_min) |
+| Gewichtsstufen bei k Gerätestufen | k, Schritt r·max\|w\|/(k−1) | 2k−1, Schritt max\|w\|/(k−1) |
+| gleicher Schritt | k_A = r(k−1)+1 ≈ 13 (k = 8), 27 (k = 16); 2k−1 gilt nur für r = 2 | – |
+| Quantisierungsfehler RMS/max\|w\| (gemessen, `fairness_levels_error.csv`) | k=8: 0,071; k=13: 0,042; k=27: 0,019 | k=8: 0,042; k=16: 0,019 |
+| Gewichte exakt 0 bei k = 8 | 0 % | 47 % (MNIST) / 36 % (CIFAR) |
+| σ_prog pro Gewicht, Skala 1, RMS/max\|w\| | 0,0109–0,0148 je Kachel | 0,0028–0,0060 je Kachel |
+| Verhältnis (A)/(C) σ_prog | 2,4–4,9 je Kachel | |
+| Boden bei t = 1 s (Relaxation + Lesen, skaliert nicht mit s) | 0,0080–0,0112 | 0,0076–0,0077 |
+
+CMO-Rauschen und Leitwert: σ_prog = 0,0112 + 0,0113·g µS, also **leitwertabhängig** (≈ 1,1 % von g + Offset). Relaxations-σ
+(0,412 µS bei t = 1 s) ist leitwertunabhängig, Lese-σ = K·log10(g)·√ln(...) schwach abhängig. Hauptgrund für die
+(A)/(C)-Differenz beim Rauschen: (A) legt kleine Gewichte (die Mehrheit) in die Bereichsmitte (hohes σ), (C) auf g_min
+(niedriges σ); dazu kommt die doppelte Leitwertspanne pro max|w|.
+
+**2. Angeglichene Punkte (5 Seeds × 3 Durchgänge, `results/fairness_<ds>.csv`, `findings_fairness_<ds>.csv`)**
+
+Rauschen: (A)-Skala mit gleichem gepooltem RMS-Gewichtsfehler (gemessen inkl. Boden und Clamp, `fairness_match.csv`);
+die Spanne ergibt sich aus der Angleichung je Kachel (`fairness_sigma.csv`).
+
+| Datensatz | (C) Skala | (C) Verlust | (A) Skala angeglichen [Spanne] | (A) Verlust [Spanne] |
+|---|---|---|---|---|
+| CIFAR | 8 | 4,89 ± 0,80 pp | 2,13 [1,79; 3,23] | 3,54 ± 0,79 pp [2,59; 7,51] |
+| MNIST | 32 | 1,23 ± 0,33 pp | 7,34 [6,82; 10,23] | 0,89 ± 0,22 pp [0,73; 2,44] |
+| MNIST | 64 | 17,4 ± 6,4 pp | 14,68 [13,63; 20,45] | 10,4 ± 4,0 pp [7,6; 33,3] |
+
+Stufen:
+
+| Datensatz | (C) k | (C) Verlust | (A) k = r(k−1)+1 | (A) 2k−1 | (A) 2k |
+|---|---|---|---|---|---|
+| CIFAR | 8 | 8,44 ± 1,80 pp | 13: 7,90 ± 2,23 pp | 15: 4,50 pp | 16: 4,40 pp |
+| CIFAR | 16 | 1,50 ± 0,37 pp | 27: 1,61 ± 0,71 pp | 31: 1,52 pp | 32: 1,15 pp |
+| MNIST | 8 | 0,26 ± 0,05 pp | 13: 0,14 ± 0,11 pp | 15: 0,13 pp | 16: 0,08 pp |
+| MNIST | 16 | 0,04 ± 0,04 pp | 27: 0,04 ± 0,04 pp | 31: 0,06 pp | 32: 0,01 pp |
+
+Vorab-Regel auf allen neuen (A)-Punkten: kein Befund, kein „unentschieden“ als Kategorie.
+
+**3. Einordnung: (i).** Nach Angleichung der effektiven Auflösung verschwindet der Vorsprung von (C). Beim Rauschen liegt
+(C) jeweils innerhalb der Spanne der angeglichenen (A)-Punkte; am gepoolten Punkt ist (A) sogar etwas besser. Bei den
+Stufen stimmen (C) und (A) bei gleichem Gewichtsschritt (k_A = r(k−1)+1) innerhalb der Seed-Streuung überein; die
+Faustregel 2k−1 überschätzt die Auflösung von (C), weil r < 2. Kernaussage unverändert. Nicht untersucht: ob der
+strukturelle Unterschied (viele exakte Nullen in (C)) die Geometrie anders verändert als (A) bei gleichem RMS-Fehler.
