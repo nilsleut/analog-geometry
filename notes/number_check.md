@@ -5,7 +5,7 @@ Geprüft: jede Dezimalzahl, Vorzeichen ignoriert, gerundet auf die angezeigten N
 Nicht geprüft: Ganzzahlen (Seeds, Paare, Stufen, Skalen, Zeilennummern im Code).
 Bei „Obergrenze ≤“ bzw. „Untergrenze ≥“ steht im Report eine Schranke; geprüft wird der gerundete Extremwert.
 
-**Ergebnis: 74 Zahlen im Report, 0 Probleme.**
+**Ergebnis: 96 Zahlen im Report, 0 Probleme.**
 
 | Zeile | Zahl | Status | Datei | Abfrage = Wert | Kontext |
 |---|---|---|---|---|---|
@@ -80,6 +80,28 @@ Bei „Obergrenze ≤“ bzw. „Untergrenze ≥“ steht im Report eine Schrank
 | 61 | 1,15 | ok | findings_all.csv | variant=A, cifar10, levels, {'levels': '32'} -> acc_drop_pp_mean = 1.15 | - **Stufen, CIFAR:** 18,3 / 4,4 / 1,15 / 0,24 pp b |
 | 61 | 0,24 | ok | findings_all.csv | variant=A, cifar10, levels, {'levels': '64'} -> acc_drop_pp_mean = 0.24 | ufen, CIFAR:** 18,3 / 4,4 / 1,15 / 0,24 pp bei 8 / |
 | 62 | 0,46 | ok | findings_all.csv | variant=A, mnist, levels, {'levels': '8'} -> acc_drop_pp_mean = 0.462 | MNIST:** Schon 8 Stufen kosten nur 0,46 pp, die Geo |
-| 73 | 0,9557 | ok | band_bootstrap_mnist.csv | post, act1, cka -> band_min_observed = 0.955687 | NIST) ein beobachtetes Minimum von 0,9557, 95 %-Inter |
-| 73 | 0,9557 | ok | band_bootstrap_mnist.csv | post, act1, cka -> boot_ci_low_2.5 = 0.955687 | inimum von 0,9557, 95 %-Intervall [0,9557; 0,9631] [b |
-| 73 | 0,9631 | ok | band_bootstrap_mnist.csv | post, act1, cka -> boot_ci_high_97.5 = 0.963131 | on 0,9557, 95 %-Intervall [0,9557; 0,9631] [band_boot |
+| 63 | 0,25 | ok | findings_all.csv | variant=C, mnist, prog_noise, {'prog_scale': 16.0} -> acc_drop_pp_mean = 0.247333 | Deutlich robuster als (A). MNIST: 0,25 / 1,23 / 17 |
+| 63 | 1,23 | ok | findings_all.csv | variant=C, mnist, prog_noise, {'prog_scale': 32.0} -> acc_drop_pp_mean = 1.228 | ch robuster als (A). MNIST: 0,25 / 1,23 / 17,4 pp b |
+| 63 | 17,4 | ok | findings_all.csv | variant=C, mnist, prog_noise, {'prog_scale': 64.0} -> acc_drop_pp_mean = 17.3887 | ster als (A). MNIST: 0,25 / 1,23 / 17,4 pp bei Skal |
+| 63 | 14,7 | ok | findings_all.csv | variant=A, mnist, prog_noise, {'prog_scale': 16.0} -> acc_drop_pp_mean = 14.6713 | 17,4 pp bei Skala 16 / 32 / 64 (A: 14,7 / 69,6 / 86 |
+| 63 | 69,6 | ok | findings_all.csv | variant=A, mnist, prog_noise, {'prog_scale': 32.0} -> acc_drop_pp_mean = 69.56 | bei Skala 16 / 32 / 64 (A: 14,7 / 69,6 / 86,2 pp); |
+| 63 | 86,2 | ok | findings_all.csv | variant=A, mnist, prog_noise, {'prog_scale': 64.0} -> acc_drop_pp_mean = 86.2213 | ala 16 / 32 / 64 (A: 14,7 / 69,6 / 86,2 pp); die Ge |
+| 63 | 1,41 | ok | findings_all.csv | variant=C, cifar10, prog_noise, {'prog_scale': 4.0} -> acc_drop_pp_mean = 1.41067 | leibt bis Skala 16 im Band. CIFAR: 1,41 / 4,89 / 16 |
+| 63 | 4,89 | ok | findings_all.csv | variant=C, cifar10, prog_noise, {'prog_scale': 8.0} -> acc_drop_pp_mean = 4.888 | is Skala 16 im Band. CIFAR: 1,41 / 4,89 / 16,2 pp b |
+| 63 | 16,2 | ok | findings_all.csv | variant=C, cifar10, prog_noise, {'prog_scale': 16.0} -> acc_drop_pp_mean = 16.242 | a 16 im Band. CIFAR: 1,41 / 4,89 / 16,2 pp bei Skal |
+| 63 | 11,1 | ok | findings_all.csv | variant=A, cifar10, prog_noise, {'prog_scale': 4.0} -> acc_drop_pp_mean = 11.12 | / 16,2 pp bei Skala 4 / 8 / 16 (A: 11,1 / 32,0 / 54 |
+| 63 | 32,0 | ok | findings_all.csv | variant=A, cifar10, prog_noise, {'prog_scale': 8.0} -> acc_drop_pp_mean = 32.0013 | pp bei Skala 4 / 8 / 16 (A: 11,1 / 32,0 / 54,7 pp); |
+| 63 | 54,7 | ok | findings_all.csv | variant=A, cifar10, prog_noise, {'prog_scale': 16.0} -> acc_drop_pp_mean = 54.676 | Skala 4 / 8 / 16 (A: 11,1 / 32,0 / 54,7 pp); fc fäl |
+| 64 | 8,44 | ok | findings_all.csv | variant=C, cifar10, levels, {'levels': '8'} -> acc_drop_pp_mean = 8.44 | - **Variante (C), Stufen:** CIFAR 8,44 / 1,50 / 0, |
+| 64 | 1,50 | ok | findings_all.csv | variant=C, cifar10, levels, {'levels': '16'} -> acc_drop_pp_mean = 1.498 | riante (C), Stufen:** CIFAR 8,44 / 1,50 / 0,44 / 0, |
+| 64 | 0,44 | ok | findings_all.csv | variant=C, cifar10, levels, {'levels': '32'} -> acc_drop_pp_mean = 0.438 | (C), Stufen:** CIFAR 8,44 / 1,50 / 0,44 / 0,07 pp b |
+| 64 | 0,07 | ok | findings_all.csv | variant=C, cifar10, levels, {'levels': '64'} -> acc_drop_pp_mean = 0.068 | ufen:** CIFAR 8,44 / 1,50 / 0,44 / 0,07 pp bei 8 / |
+| 64 | 18,3 | ok | findings_all.csv | variant=A, cifar10, levels, {'levels': '8'} -> acc_drop_pp_mean = 18.316 | pp bei 8 / 16 / 32 / 64 Stufen (A: 18,3 / 4,4 / 1,1 |
+| 64 | 4,4 | ok | findings_all.csv | variant=A, cifar10, levels, {'levels': '16'} -> acc_drop_pp_mean = 4.404 | 8 / 16 / 32 / 64 Stufen (A: 18,3 / 4,4 / 1,15 / 0, |
+| 64 | 1,15 | ok | findings_all.csv | variant=A, cifar10, levels, {'levels': '32'} -> acc_drop_pp_mean = 1.15 | / 32 / 64 Stufen (A: 18,3 / 4,4 / 1,15 / 0,24 pp), |
+| 64 | 0,24 | ok | findings_all.csv | variant=A, cifar10, levels, {'levels': '64'} -> acc_drop_pp_mean = 0.24 | 64 Stufen (A: 18,3 / 4,4 / 1,15 / 0,24 pp), außerh |
+| 64 | 0,26 | ok | findings_all.csv | variant=C, mnist, levels, {'levels': '8'} -> acc_drop_pp_mean = 0.26 | ds nur RSA fc bei 8 Stufen. MNIST: 0,26 pp bei 8 St |
+| 64 | 0,46 | ok | findings_all.csv | variant=A, mnist, levels, {'levels': '8'} -> acc_drop_pp_mean = 0.462 | n. MNIST: 0,26 pp bei 8 Stufen (A: 0,46 pp) [findin |
+| 75 | 0,9557 | ok | band_bootstrap_mnist.csv | post, act1, cka -> band_min_observed = 0.955687 | NIST) ein beobachtetes Minimum von 0,9557, 95 %-Inter |
+| 75 | 0,9557 | ok | band_bootstrap_mnist.csv | post, act1, cka -> boot_ci_low_2.5 = 0.955687 | inimum von 0,9557, 95 %-Intervall [0,9557; 0,9631] [b |
+| 75 | 0,9631 | ok | band_bootstrap_mnist.csv | post, act1, cka -> boot_ci_high_97.5 = 0.963131 | on 0,9557, 95 %-Intervall [0,9557; 0,9631] [band_boot |

@@ -55,12 +55,14 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
   - Im MLP ist der Effekt vor der ReLU ein reiner Versatz pro Stimulus (zentrierte CKA ≥ 0,9996). Nur in Schicht 1 führt die ReLU ihn aus dem Band.
   - Im CNN ist der Effekt in den Faltungsschichten schon vor der ReLU kein reiner Versatz: conv2 isoliert 0,898 gegen Band-Min 0,914 nach 1 Wo [isolated_summary_*]. Ungeprüfte Vermutung: Der Versatz hängt bei der Faltung vom Ort ab (Rezeptivfeld, Zero-Padding).
 
-**4. Rauschen und Stufen (Abb. 2, Variante A; (C) wird nachgetragen).**
+**4. Rauschen und Stufen (Abb. 2, Varianten A und C).**
 - **Programmierrauschen, CIFAR:** Ab Skala 4 fällt der fc-Layer aus dem Band, bei 11,1 pp Verlust.
 - **Programmierrauschen, MNIST:** Der Verlust bleibt bis Skala 4 unter 1 pp (0,24 pp). Bei Skala 8 sind es 1,13 pp, bei 16 dann 14,7 pp mit allen Schichten außerhalb. Bis Skala 8 liegt die Geometrie im Band.
 - **Stufen, CIFAR:** 18,3 / 4,4 / 1,15 / 0,24 pp bei 8 / 16 / 32 / 64 Stufen. Nur bei 8 Stufen liegen act2 und fc außerhalb des Bands.
 - **Stufen, MNIST:** Schon 8 Stufen kosten nur 0,46 pp, die Geometrie bleibt im Band [findings_*].
-- **Befunde:** Accuracy und Geometrie verschlechtern sich in diesen Sweeps gemeinsam. Keine Einstellung ist ein Befund.
+- **Variante (C), Rauschen:** Deutlich robuster als (A). MNIST: 0,25 / 1,23 / 17,4 pp bei Skala 16 / 32 / 64 (A: 14,7 / 69,6 / 86,2 pp); die Geometrie bleibt bis Skala 16 im Band. CIFAR: 1,41 / 4,89 / 16,2 pp bei Skala 4 / 8 / 16 (A: 11,1 / 32,0 / 54,7 pp); fc fällt erst ab Skala 16 aus dem Band [findings_all].
+- **Variante (C), Stufen:** CIFAR 8,44 / 1,50 / 0,44 / 0,07 pp bei 8 / 16 / 32 / 64 Stufen (A: 18,3 / 4,4 / 1,15 / 0,24 pp), außerhalb des Bands nur RSA fc bei 8 Stufen. MNIST: 0,26 pp bei 8 Stufen (A: 0,46 pp) [findings_all].
+- **Befunde:** Accuracy und Geometrie verschlechtern sich in diesen Sweeps gemeinsam. Keine Einstellung ist ein Befund, weder in (A) noch in (C). Unentschieden ist ebenfalls keine. Warum (C) beim Rauschen robuster ist, habe ich nicht untersucht; dieser Unterschied ist nicht Teil der Kernaussage.
 
 ## Grenzen
 
@@ -73,7 +75,6 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
 - **Referenzband:** Es stammt aus nur 10 Seed-Paaren (5 Seeds). Der Bootstrap über die Seeds gibt z. B. für act1/CKA (MNIST) ein beobachtetes Minimum von 0,9557, 95 %-Intervall [0,9557; 0,9631] [band_bootstrap_mnist]. Ein Bootstrap des Minimums zeigt nur Unsicherheit nach oben. Die Grenzfall-Regel spiegelt diese Breite nach unten; das ist eine Annahme und nicht aus den Daten abgeleitet.
 - **Reproduzierbarkeit:** Der C++-Zufallsgenerator für Vorwärts- und Peripherie-Rauschen ist nicht seedbar. Der Punkt mit Default-Peripherie ist daher nicht bitgenau reproduzierbar, alle anderen Läufe (ideale Peripherie) schon.
 - **Konverter-Override:** Variante (C) setzt den Konverter am fertigen Objekt. Ob die Fit-Koeffizienten aus Einzelgeräte-Messungen für ein Paar gelten, ist nicht belegt.
-- **Rauschen und Stufen für (C):** Diese Läufe sind zum Zeitpunkt dieses Standes noch nicht abgeschlossen.
 
 *Reproduktion: README bzw. `notes/step3_design.md`. Abbildungen: `python -m analog_geometry.report_figures`. Tabelle: `results/findings_all.csv`.*
 
@@ -81,7 +82,7 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
 **Abb. 1:** Drift-Zeit für die Varianten (A), (B) und (C), oben jeweils MNIST, unten CIFAR. Δ Accuracy mit 1-pp-Linie, darunter CKA und RSA je Schicht mit Seed-Band. Kreise markieren Befunde nach der Vorab-Regel, Rauten „unentschiedene“ Einstellungen (Accuracy-Zeile) bzw. Schichten an der Bandgrenze (Geometrie-Zeilen). Jede Achse hat ihre eigene y-Skala. Der 1-s-Punkt von (B) ist mit (A) identisch, weil ln 1 = 0.
 
 ![Abb. 2](../figures/fig2_noise_levels.png)
-**Abb. 2:** Programmierrauschen und Leitwertstufen, (A) und (C). Die Spalten für (C) werden automatisch gefüllt, sobald die CSVs vorliegen.
+**Abb. 2:** Programmierrauschen und Leitwertstufen, (A) und (C), oben MNIST, unten CIFAR. Rauten markieren Schichten an der Bandgrenze. Jede Achse hat ihre eigene y-Skala.
 
 ![Abb. 3](../figures/fig3_delta_w.png)
 **Abb. 3:** Gemessener Drift-Schritt Δw nach 1 Tag, getrennt nach Vorzeichen des Gewichts, (A) gegen (C). Mittel über 5 Seeds und alle Kacheln.

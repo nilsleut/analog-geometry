@@ -223,3 +223,12 @@ Wechsel gegenüber vorher:
 - MNIST Wan2022 1 d / 2 d (Anhang): kein Befund -> unentschieden (0,93 / 0,92 pp; RSA fc3 an der Grenze).
 - CIFAR, (C): keine Kategorie-Wechsel (nirgends accuracy-stabil mit Abweichung).
 Die frühere Einzelfall-Regel (act1 cka_stimc 1 d unentschieden) ist darin enthalten.
+
+## Nachtlauf (C) Rauschen + Stufen abgeschlossen (16.11.2026)
+
+- Treiber fertig um 12:01 (Commits 8f0cbe0, 7288e39, 9e762ce, 4293447). `rebuild_all.sh` danach: Abb. 1–3 und `findings_all.csv` (82 Zeilen) neu.
+- Vorab-Regel auf (C), Rauschen/Stufen: kein Befund, auch keine Einstellung „unentschieden“ (beide Datensätze).
+- Deutlicher Unterschied zu (A), nur gemeldet, NICHT in der Kernaussage: (C) ist beim Programmierrauschen viel robuster
+  (MNIST Skala 32: 1,23 vs. 69,6 pp; Skala 64: 17,4 vs. 86,2 pp; CIFAR Skala 8: 4,89 vs. 32,0 pp) und bei den Stufen
+  etwa halb so empfindlich (CIFAR 8 Stufen: 8,44 vs. 18,3 pp). Ursache nicht untersucht.
+- Report Abschnitt 4 ergänzt, Grenzen-Punkt „noch nicht abgeschlossen“ entfernt. Zahlenprüfung: 96 Zahlen, 0 Probleme.
