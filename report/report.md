@@ -4,7 +4,7 @@
 
 ## Kernaussage
 
-Unter den untersuchten Einstellungen hängt der Drift-Schaden im `ReRamCMONoiseModel` überwiegend an der Konverter-Annahme. Mit Einzelgerät und driftfreier Referenz entsteht ein gleichförmiger Gewichtsversatz von etwa 2–2,5 % von max|w| nach 1 Tag [gate_drift_offset]. Er kostet auf CIFAR 30,0 pp Accuracy. Mit Differenzpaar sind es 1,1 pp, ohne Versatz (Kontrolle 2a) 2,2 pp [findings_all]. Die Geometrie-Befunde im MLP („nur CKA“) treten nur mit driftfreier Referenz auf. Die Geometrie-Analyse ist die zweite Ebene: Sie zeigt, dass linear CKA und RSA denselben Versatz unterschiedlich sehen.
+Unter den untersuchten Einstellungen hängt der Drift-Schaden im `ReRamCMONoiseModel` überwiegend an der Konverter-Annahme. Mit Einzelgerät und driftfreier Referenz entsteht ein gleichförmiger Gewichtsversatz von etwa 2–2,5 % von max|w| nach 1 Tag [gate_drift_offset]. Er kostet auf CIFAR 30,0 pp Accuracy. Mit Differenzpaar sind es 1,1 pp, ohne Versatz (Kontrolle 2a) 2,2 pp [findings_all]. Die Geometrie-Befunde im MLP („nur CKA“) treten nur mit driftfreier Referenz auf. Auf CIFAR ist die Vorab-Regel für (A) und (B) nicht prüfbar, weil schon der Ankerpunkt ohne Drift-Versatz 1,07 pp kostet; unter (C) ist sie prüfbar und ergibt keinen Befund. Die Geometrie-Analyse ist die zweite Ebene: Sie zeigt, dass linear CKA und RSA denselben Versatz unterschiedlich sehen.
 
 **Offenlegung.** Die Variante (A) war vorab als Hauptlauf festgelegt und bleibt es. Die Frage nach dem Konverter kam erst nachträglich auf, durch eine Plausibilitätsprüfung (Gate) nach Abschluss aller Läufe. Die Varianten (B) und (C) sind deshalb Kontrollen und nicht vorab geplant. Die Vorab-Regel für Befunde wurde am 15.11.2026 vor dem CIFAR-Lauf festgelegt, nach Sicht der MNIST-Daten. Für MNIST gilt sie also nachträglich.
 
@@ -31,12 +31,16 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
 
 ## Ergebnisse
 
-**1. Der Versatz wirkt auf das Gewicht (Abb. 3).** Bei (A) ist der Drift-Schritt nach 1 Tag für positive, negative und ≈ 0-Gewichte gleich. Er beträgt −1,97 bis −2,53 % von max|w| je Kachel und entspricht der Vorhersage −0,089·ln(t)/scale_ratio auf < 2 % [gate_drift_offset]. Bei (C) schrumpft der Betrag symmetrisch (−1,33 % bei w > 0, +1,33 % bei w < 0, ≈ 0 bei w ≈ 0). Die skalare Drift-Kompensation gleicht das weitgehend aus (α = 1,04–1,19). Gegen den additiven Versatz bei (A) wirkt sie nicht (α = 0,94–1,00).
+![Abb. 1](../figures/fig0_headline.png)
+**Abb. 1:** Accuracy-Verlust über die Drift-Zeit für (A) Einzelgerät mit driftfreier Referenz, (B) Einzelgerät mit mitdriftender Referenz und (C) Differenzpaar. Alle Varianten stehen je Datensatz auf derselben y-Achse. Fehlerbalken: Std über 5 Seeds × 3 Programmierdurchgänge. Gepunktet: 1-pp-Grenze der Vorab-Regel. Englische Beschriftung, weil die Abbildung auch im Issue-Entwurf steht.
 
-**2. Drift (Abb. 1, Tabelle).**
+**1. Der Versatz wirkt auf das Gewicht (Abb. 4).** Bei (A) ist der Drift-Schritt nach 1 Tag für positive, negative und ≈ 0-Gewichte gleich. Er beträgt −1,97 bis −2,53 % von max|w| je Kachel und entspricht der Vorhersage −0,089·ln(t)/scale_ratio auf < 2 % [gate_drift_offset]. Bei (C) schrumpft der Betrag symmetrisch (−1,33 % bei w > 0, +1,33 % bei w < 0, ≈ 0 bei w ≈ 0). Die skalare Drift-Kompensation gleicht das weitgehend aus (α = 1,04–1,19). Gegen den additiven Versatz bei (A) wirkt sie nicht (α = 0,94–1,00).
+
+**2. Drift (Abb. 1, Abb. 2, Tabelle).**
 - **CIFAR, Variante (A):** Der Accuracy-Verlust steigt von 1,07 pp (1 s) auf 19,5 / 30,0 / 35,9 / 45,1 pp (1 h / 1 d / 1 Wo / 1 J). CKA und RSA fallen ab 1 h in allen Schichten unter das Band.
 - **CIFAR, (B) und (C):** (B) verliert 2,2 / 3,2 pp (1 d / 1 J), (C) 1,1 / 1,4 / 2,2 pp (1 d / 1 Wo / 1 J). Die Geometrie bleibt in beiden Varianten in allen Schichten im Band.
-- **CIFAR nach Vorab-Regel:** Es gibt keinen Befund, in keiner Variante. Accuracy-stabil sind nur Einstellungen ohne Drift (Rauschskala 0: 0,50 pp; ≥ 64 Stufen), und dort liegt die Geometrie im Band [findings_cifar10]. Schon der Ankerpunkt (A, Skala 1, 1 s) liegt mit 1,07 pp knapp über der Grenze. Dieser Nullbefund ist ein Ergebnis und kein fehlender Datenpunkt.
+- **CIFAR nach Vorab-Regel, (A) und (B): unter der Vorab-Regel nicht prüfbar.** Schon der Ankerpunkt (A, Skala 1, 1 s; noch ohne Drift-Versatz, weil ln 1 = 0) liegt mit 1,07 pp über der 1-pp-Grenze, und (B) teilt diesen Punkt. Die Accuracy-Bedingung ist damit schon ohne Drift-Versatz verletzt, und ob Drift allein die Geometrie bei stabiler Accuracy verändert, lässt sich mit dieser Regel nicht entscheiden. Accuracy-stabil sind auf CIFAR nur Einstellungen ohne Programmierrauschen (Rauschskala 0: 0,50 pp) oder mit ≥ 64 Stufen; dort liegt die Geometrie im Band [findings_cifar10].
+- **CIFAR nach Vorab-Regel, (C): prüfbar, kein Befund.** Der Ankerpunkt von (C) verliert 0,28 pp. Die Drift-Punkte liegen mit 1,1 / 1,4 / 2,2 pp (1 d / 1 Wo / 1 J) über der Grenze, und die Geometrie bleibt in allen Schichten im Band [findings_all].
 - **MNIST:** Unter (A) erfüllen drei Einstellungen die Vorab-Regel, alle „nur CKA“ [findings_mnist]. Werte: CKA, in Klammern die Bandgrenze; „unentsch.“ = innerhalb der Bootstrap-Breite.
 
 | Einstellung | Accuracy-Verlust | CKA (Band-Min) |
@@ -55,7 +59,7 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
   - Im MLP ist der Effekt vor der ReLU ein reiner Versatz pro Stimulus (zentrierte CKA ≥ 0,9996). Nur in Schicht 1 führt die ReLU ihn aus dem Band.
   - Im CNN ist der Effekt in den Faltungsschichten schon vor der ReLU kein reiner Versatz: conv2 isoliert 0,898 gegen Band-Min 0,914 nach 1 Wo [isolated_summary_*]. Ungeprüfte Vermutung: Der Versatz hängt bei der Faltung vom Ort ab (Rezeptivfeld, Zero-Padding).
 
-**4. Rauschen und Stufen (Abb. 2, Varianten A und C).**
+**4. Rauschen und Stufen (Abb. 3, Varianten A und C).**
 - **Programmierrauschen, CIFAR:** Ab Skala 4 fällt der fc-Layer aus dem Band, bei 11,1 pp Verlust.
 - **Programmierrauschen, MNIST:** Der Verlust bleibt bis Skala 4 unter 1 pp (0,24 pp). Bei Skala 8 sind es 1,13 pp, bei 16 dann 14,7 pp mit allen Schichten außerhalb. Bis Skala 8 liegt die Geometrie im Band.
 - **Stufen, CIFAR:** 18,3 / 4,4 / 1,15 / 0,24 pp bei 8 / 16 / 32 / 64 Stufen. Nur bei 8 Stufen liegen act2 und fc außerhalb des Bands.
@@ -82,11 +86,11 @@ Das ist exakt nachgeprüft. Beide Varianten verbrauchen dieselben Zufallszahlen.
 
 *Reproduktion: README bzw. `notes/step3_design.md`. Abbildungen: `python -m analog_geometry.report_figures`. Tabelle: `results/findings_all.csv`.*
 
-![Abb. 1](../figures/fig1_drift_variants.png)
-**Abb. 1:** Drift-Zeit für die Varianten (A), (B) und (C), oben jeweils MNIST, unten CIFAR. Δ Accuracy mit 1-pp-Linie, darunter CKA und RSA je Schicht mit Seed-Band. Kreise markieren Befunde nach der Vorab-Regel, Rauten „unentschiedene“ Einstellungen (Accuracy-Zeile) bzw. Schichten an der Bandgrenze (Geometrie-Zeilen). Jede Achse hat ihre eigene y-Skala. Der 1-s-Punkt von (B) ist mit (A) identisch, weil ln 1 = 0.
+![Abb. 2](../figures/fig1_drift_variants.png)
+**Abb. 2:** Drift-Zeit für die Varianten (A), (B) und (C), oben jeweils MNIST, unten CIFAR. Δ Accuracy mit 1-pp-Linie, darunter CKA und RSA je Schicht mit Seed-Band. Kreise markieren Befunde nach der Vorab-Regel. Eine Raute markiert „unentschieden“: in der Accuracy-Zeile die Einstellung, in den Geometrie-Zeilen die Schicht an der Bandgrenze. Jede Achse hat ihre eigene y-Skala. Der 1-s-Punkt von (B) ist mit (A) identisch, weil ln 1 = 0.
 
-![Abb. 2](../figures/fig2_noise_levels.png)
-**Abb. 2:** Programmierrauschen und Leitwertstufen, (A) und (C), oben MNIST, unten CIFAR. Rauten markieren Schichten an der Bandgrenze. Jede Achse hat ihre eigene y-Skala.
+![Abb. 3](../figures/fig2_noise_levels.png)
+**Abb. 3:** Programmierrauschen und Leitwertstufen, (A) und (C), oben MNIST, unten CIFAR. Rauten markieren „unentschiedene“ Schichten an der Bandgrenze. Jede Achse hat ihre eigene y-Skala.
 
-![Abb. 3](../figures/fig3_delta_w.png)
-**Abb. 3:** Gemessener Drift-Schritt Δw nach 1 Tag, getrennt nach Vorzeichen des Gewichts, (A) gegen (C). Mittel über 5 Seeds und alle Kacheln.
+![Abb. 4](../figures/fig3_delta_w.png)
+**Abb. 4:** Gemessener Drift-Schritt Δw nach 1 Tag, getrennt nach Vorzeichen des Gewichts, (A) gegen (C). Mittel über 5 Seeds und alle Kacheln.

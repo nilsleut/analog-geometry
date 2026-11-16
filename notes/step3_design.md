@@ -291,3 +291,14 @@ strukturelle Unterschied (viele exakte Nullen in (C)) die Geometrie anders verä
 Keine weiteren Analysen. Offen und nur im Report vermerkt: exakte Nullen bei 8 Stufen in (C). Issue #9 um eine kurze
 Beobachtung zum leitwertabhängigen Programmierrauschen ergänzt (Entwurf, nicht gepostet). Review-Paket in `review/`
 (`scripts/build_review.sh`). Tag `v1.0-review` (lokal).
+
+## Review-Änderungen (16.11.2026, Freeze für Analysen gilt weiter)
+
+- Duplikat-Check IBM/aihwkit (Issues/PRs über GitHub-REST-Suche, Discussions über die Web-Suche; `gh` ist nicht installiert):
+  kein Duplikat. Nächster Treffer #833 (Wan2022: Drift-Schritt aus Ziel- statt programmierten Leitwerten, Gain-Fehler),
+  anderes Problem; #702 ist der PR, der das CMO-Modell eingeführt hat. Nichts kommentiert.
+- Issue #9: Satz zum C++-RNG NICHT übernommen, weil er für den Reproducer falsch wäre. Der Reproducer nutzt torch-RNG und ist
+  mit `torch.manual_seed(0)` 5/5 bitgleich; ohne Seed: Einzelgerät −2,30 … −2,54 %, Paar ±1,32 … ±1,36 % von max|w| (5 Läufe).
+  Stattdessen diese zutreffende Notiz eingefügt.
+- Report: CIFAR (A)/(B) „unter der Vorab-Regel nicht prüfbar“ (Ankerpunkt 1,07 pp), (C) prüfbar ohne Befund (Anker 0,28 pp).
+  Neue Abb. 1 (`fig0_headline`), alte Abb. 1–3 -> 2–4. Englischer One-Pager `report/summary_en.md`.

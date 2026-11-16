@@ -1,0 +1,6 @@
+/* one-pager: fit on one A4 page */
+@page { margin: 12mm 14mm; }
+body { font-size: 9.4pt; line-height: 1.28; }
+h1 { font-size: 14pt; margin-bottom: 3pt; }
+img { max-width: 86%; margin: 4pt auto 0; }
+p, li { margin: 2pt 0; }

@@ -21,7 +21,9 @@ from analog_geometry.analyze import FIG, GRID, INK, INK2, LAYER_STYLE, SURFACE
 from analog_geometry.common import LAYERS, RESULTS
 
 DS = [("mnist", "MNIST-MLP"), ("cifar10", "CIFAR-CNN")]
-TLAB = {1.0: "1 s", 3600.0: "1 h", 86400.0: "1 d", 604800.0: "1 Wo", 31536000.0: "1 J"}
+TLAB = {1.0: "1s", 3600.0: "1h", 86400.0: "1d", 604800.0: "1Wo", 31536000.0: "1J"}
+UND_LABEL = "unentschieden (Bandgrenze ± Bootstrap-Breite)"  # one diamond for accuracy row and geometry rows
+UND_KW = dict(s=80, marker="D", facecolors="none", edgecolors=INK, lw=1.1)
 VARIANT_TITLE = {"A": "(A) Einzelgerät,\ndriftfreie Referenz (Standard)",
                  "B": "(B) Einzelgerät, mitdriftende\nReferenz (= Kontrolle 2a)",
                  "C": "(C) Differenzpaar G⁺−G⁻"}
@@ -85,16 +87,14 @@ def _panel(ax, sub, xcol, ds, band, metric, xform=None):
             ax.scatter(f["_x"], f["acc_drop_pp_mean"], s=110, facecolors="none", edgecolors=INK, lw=1.4, zorder=5,
                        label="Befund (Vorab-Regel)")
             u = g[g["category"] == "unentschieden"]
-            ax.scatter(u["_x"], u["acc_drop_pp_mean"], s=110, marker="D", facecolors="none", edgecolors=INK, lw=1.2,
-                       zorder=5, label="unentschieden (Bandgrenze)")
+            ax.scatter(u["_x"], u["acc_drop_pp_mean"], zorder=5, label=UND_LABEL, **UND_KW)
             ax.axhline(1.0, color=INK2, lw=0.9, ls="--")
         else:
             ax.axhspan(band.loc[layer, f"{metric}_min"], band.loc[layer, f"{metric}_max"], color=color, alpha=0.15, lw=0)
             ax.errorbar(g["_x"], g[f"{metric}_mean"], yerr=g[f"{metric}_std_total"], color=color, marker=marker, ms=4,
                         lw=1.6, capsize=2, label=LAYER_LABEL[li])
             u = g[g[f"{metric}_status"] == "undecided"]
-            ax.scatter(u["_x"], u[f"{metric}_mean"], s=70, marker="D", facecolors="none", edgecolors=INK, lw=1.0,
-                       zorder=6, label="Schicht an der Bandgrenze (± Bootstrap-Breite)")
+            ax.scatter(u["_x"], u[f"{metric}_mean"], zorder=6, label=UND_LABEL, **UND_KW)
 
 
 def _finish(ax):
@@ -120,7 +120,7 @@ def fig1():
                 if sub is not None and not sub.empty:
                     ax.set_xscale("log")
                     ax.set_xticks(list(TLAB))
-                    ax.set_xticklabels(list(TLAB.values()))
+                    ax.set_xticklabels(list(TLAB.values()), rotation=35, ha="right", rotation_mode="anchor")
                     ax.minorticks_off()
                     ax.set_xlim(0.4, 9e7)
                 _finish(ax)
@@ -208,6 +208,52 @@ def fig3():
     _save(fig, "fig3_delta_w")
 
 
+def fig0():
+    """Headline figure (English, for mail / issue): accuracy loss vs drift time, variants A/B/C on ONE y-axis per dataset.
+    PNG is exactly 1200 px wide (10 in x 120 dpi, no tight bbox) with fonts >= 11 pt."""
+    import matplotlib.pyplot as plt
+    _style(plt)
+    plt.rcParams.update({"font.size": 12})
+    var = [("A", "(A) single device, fixed reference", C_LINE, "o", "-"),
+           ("B", "(B) single device, drifting reference", INK2, "s", "--"),
+           ("C", "(C) differential pair", C_FILL, "^", "-")]
+    lab = {1.0: "1 s", 3600.0: "1 h", 86400.0: "1 d", 604800.0: "1 wk", 31536000.0: "1 yr"}
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.6))
+    for ax, (ds, dname) in zip(axes, [("mnist", "MNIST MLP"), ("cifar10", "CIFAR-10 CNN")]):
+        a, c, _ = load(ds)
+        for k, (v, name, col, mk, ls) in enumerate(var):
+            sub = drift_rows(a, c, v)
+            g = sub[sub["layer"] == LAYERS[ds][0]].sort_values("t_inference")
+            x = g["t_inference"] * (1.0 + 0.12 * (k - 1))  # small horizontal dodge on the log axis
+            ax.errorbar(x, g["acc_drop_pp_mean"], yerr=g["acc_drop_pp_std_total"], color=col, marker=mk, ms=6,
+                        lw=2.0, ls=ls, capsize=3, label=name)
+        ax.axhline(1.0, color=INK, lw=1.0, ls=":")
+        if ds == "mnist":  # same line in both panels; label once (in the CIFAR panel it would cover the 1 s points)
+            ax.text(1.3, 1.0, "1 pp", color=INK, fontsize=11, va="bottom")
+        ax.set_xscale("log")
+        ax.set_xticks(list(lab))
+        ax.set_xticklabels(list(lab.values()), fontsize=11)
+        ax.minorticks_off()
+        ax.set_xlim(0.5, 7e7)
+        ax.set_ylim(bottom=-0.05 * ax.get_ylim()[1])
+        ax.tick_params(axis="y", labelsize=11)
+        ax.set_title(dname, fontsize=13, color=INK)
+        ax.set_xlabel("time after programming", fontsize=12)
+        _finish(ax)
+    axes[0].set_ylabel("accuracy loss [pp]", fontsize=12)
+    fig.legend(*axes[0].get_legend_handles_labels(), loc="upper center", ncol=3, frameon=False, fontsize=11,
+               bbox_to_anchor=(0.5, 0.905))
+    fig.suptitle("Drift damage in aihwkit's CMO ReRAM model depends on the conductance converter", fontsize=14,
+                 color=INK, y=0.985)
+    fig.text(0.5, 0.012, "mean ± SD over 5 seeds × 3 programming runs · digital training, ideal periphery, "
+             "global drift compensation · aihwkit 1.2.0", ha="center", fontsize=11, color=INK2)
+    fig.subplots_adjust(left=0.075, right=0.985, top=0.76, bottom=0.2, wspace=0.18)
+    FIG.mkdir(exist_ok=True)
+    fig.savefig(FIG / "fig0_headline.png", dpi=120)
+    fig.savefig(FIG / "fig0_headline.pdf")
+    print("wrote", FIG / "fig0_headline.png")
+
+
 def _legend(fig, axes):
     hs, ls = [], []
     for ax in axes.flat:
@@ -248,6 +294,7 @@ def main():
     import matplotlib
     matplotlib.use("Agg")
     findings_all()
+    fig0()
     fig1()
     fig2()
     fig3()

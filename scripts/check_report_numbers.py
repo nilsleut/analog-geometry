@@ -19,6 +19,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "results"
 REPORT = ROOT / "report" / "report.md"
+SUMMARY = ROOT / "report" / "summary_en.md"
 DAY, WEEK, YEAR = 86400.0, 604800.0, 31536000.0
 _cache: dict = {}
 
@@ -157,6 +158,7 @@ SPEC = [
     ("30,0", F("A", "cifar10", "drift_time", t_inference=DAY)),
     ("1,1", F("C", "cifar10", "drift_time", t_inference=DAY)),
     ("2,2", F("B (2a)", "cifar10", "drift_no_mean", t_inference=DAY)),
+    ("1,07", F("A", "cifar10", "prog_noise", prog_scale=1.0)),
     # line 13: baselines
     ("98,42", ("baseline_summary.csv", "mnist test_acc_mean ×100", lambda: 100 * sel("baseline_summary.csv", "test_acc_mean", dataset="mnist"))),
     ("0,09", ("baseline_summary.csv", "mnist test_acc_std ×100", lambda: 100 * sel("baseline_summary.csv", "test_acc_std", dataset="mnist"))),
@@ -190,8 +192,12 @@ SPEC = [
     ("1,1", F("C", "cifar10", "drift_time", t_inference=DAY)),
     ("1,4", F("C", "cifar10", "drift_time", t_inference=WEEK)),
     ("2,2", F("C", "cifar10", "drift_time", t_inference=YEAR)),
-    ("0,50", F("A", "cifar10", "prog_noise", prog_scale=0.0)),
     ("1,07", F("A", "cifar10", "prog_noise", prog_scale=1.0)),
+    ("0,50", F("A", "cifar10", "prog_noise", prog_scale=0.0)),
+    ("0,28", F("C", "cifar10", "prog_noise", prog_scale=1.0)),
+    ("1,1", F("C", "cifar10", "drift_time", t_inference=DAY)),
+    ("1,4", F("C", "cifar10", "drift_time", t_inference=WEEK)),
+    ("2,2", F("C", "cifar10", "drift_time", t_inference=YEAR)),
     # line 44-46: MNIST findings
     ("0,49", F("A", "mnist", "drift_time", t_inference=DAY)),
     ("0,937", S("mnist", "drift_time", "act1", "cka_mean", t_inference=DAY)),
@@ -289,14 +295,42 @@ SPEC = [
 # numbers added to the report later are appended via EXTRA (see bottom of file)
 
 
-def main(spec=None):
-    spec = spec or SPEC
-    text = REPORT.read_text(encoding="utf-8")
+# report/summary_en.md (English one-pager, decimal point; numbers must also be in the report)
+SUMMARY_SPEC = [
+    ("98,42", ("baseline_summary.csv", "mnist test_acc_mean ×100", lambda: 100 * sel("baseline_summary.csv", "test_acc_mean", dataset="mnist"))),
+    ("76,37", ("baseline_summary.csv", "cifar10 test_acc_mean ×100", lambda: 100 * sel("baseline_summary.csv", "test_acc_mean", dataset="cifar10"))),
+    ("2,5", gate("(A) max_Kachel |Δw|/max|w| in % (Mittel über Seeds)", lambda: _a_tile_rel().abs().max())),
+    ("0,94", gate("(A) min alpha", lambda: _alpha("single_device", "min"))),
+    ("1,00", gate("(A) max alpha", lambda: _alpha("single_device", "max"))),
+    ("30,0", F("A", "cifar10", "drift_time", t_inference=DAY)),
+    ("1,1", F("C", "cifar10", "drift_time", t_inference=DAY)),
+    ("2,2", F("B (2a)", "cifar10", "drift_no_mean", t_inference=DAY)),
+    ("0,49", F("A", "mnist", "drift_time", t_inference=DAY)),
+    ("0,85", F("A", "mnist", "drift_time", t_inference=WEEK)),
+    ("0,67", F("A", "mnist", "periphery_default")),
+    ("0,937", S("mnist", "drift_time", "act1", "cka_mean", t_inference=DAY)),
+    ("0,956", R("mnist", "act1", "cka_min")),
+    ("0,08", ("findings_all.csv", "MNIST B + C(Drift): max acc_drop_pp_mean (Obergrenze ≤)", lambda: _mnist_bc("acc_drop_pp_mean", "max"))),
+    ("0,997", ("findings_all.csv", "MNIST B + C(Drift): min cka_min_over_layers (Untergrenze ≥)", lambda: _mnist_bc("cka_min_over_layers", "min"))),
+    ("1,07", F("A", "cifar10", "prog_noise", prog_scale=1.0)),
+    ("0,990", S("mnist", "drift_time", "act1", "rsa_mean", t_inference=DAY)),
+    ("0,925", R("mnist", "act1", "rsa_min")),
+    ("0,944", R("mnist", "act1", "rsa_max")),
+]
+
+
+PATTERNS = {",": r"\d+,\d+", ".": r"(?<!\d)(?<!\d\.)\d+\.\d+(?!\d)(?!\.\d)"}  # "." form skips versions like 1.2.0
+
+
+def check(spec, path, sep=","):
+    """Pair every decimal number in `path` (in order) with `spec`; returns (rows, n_found, n_bad, n_unused)."""
+    text = path.read_text(encoding="utf-8")
     found = [(ln, m.group(0), line[max(0, m.start() - 35):m.end() + 12].replace("|", "/").strip())
-             for ln, line in enumerate(text.splitlines(), 1) for m in re.finditer(r"\d+,\d+", line)]
+             for ln, line in enumerate(text.splitlines(), 1) for m in re.finditer(PATTERNS[sep], line)]
     rows, n_bad = [], 0
     for i, (ln, tok, ctx) in enumerate(found):
-        if i >= len(spec) or spec[i][0] != tok:
+        norm = tok.replace(".", ",") if sep == "." else tok
+        if i >= len(spec) or spec[i][0] != norm:
             exp = spec[i][0] if i < len(spec) else "-"
             rows.append((ln, tok, f"NICHT ZUGEORDNET (Spec erwartet {exp}); Prüfung ab hier abgebrochen", "-", "-", ctx))
             n_bad += 1
@@ -308,31 +342,42 @@ def main(spec=None):
             rows.append((ln, tok, f"FEHLER {e}", f, desc, ctx))
             n_bad += 1
             continue
-        d = len(tok.split(",")[1])
-        shown = float(tok.replace(",", "."))
+        d = len(norm.split(",")[1])
+        shown = float(norm.replace(",", "."))
         ok = round(abs(v), d) == round(shown, d)
         if not ok:
             n_bad += 1
         rows.append((ln, tok, "ok" if ok else f"ABWEICHUNG: CSV {abs(v):.{d + 2}f}", f, f"{desc} = {v:.6g}", ctx))
-    extra = len(spec) - len(found)
+    return rows, len(found), n_bad, max(len(spec) - len(found), 0)
+
+
+def main(spec=None, summary_spec=None):
+    targets = [("report/report.md", REPORT, spec or SPEC, ","),
+               ("report/summary_en.md", SUMMARY, summary_spec if summary_spec is not None else SUMMARY_SPEC, ".")]
     out = ROOT / "notes" / "number_check.md"
-    lines = ["# Zahlenprüfung report/report.md -> results/*.csv",
+    lines = ["# Zahlenprüfung report/report.md und report/summary_en.md -> results/*.csv",
              "",
-             "Erzeugt von `scripts/check_report_numbers.py` (feste Zuordnung Zahl -> CSV-Abfrage, in Reihenfolge des Reports).",
-             "Geprüft: jede Dezimalzahl, Vorzeichen ignoriert, gerundet auf die angezeigten Nachkommastellen.",
+             "Erzeugt von `scripts/check_report_numbers.py` (feste Zuordnung Zahl -> CSV-Abfrage, in Reihenfolge des Texts).",
+             "Geprüft: jede Dezimalzahl, Vorzeichen ignoriert, gerundet auf die angezeigten Nachkommastellen "
+             "(Report: Dezimalkomma; englische Zusammenfassung: Dezimalpunkt, Versionsnummern ausgenommen).",
              "Nicht geprüft: Ganzzahlen (Seeds, Paare, Stufen, Skalen, Zeilennummern im Code).",
-             "Bei „Obergrenze ≤“ bzw. „Untergrenze ≥“ steht im Report eine Schranke; geprüft wird der gerundete Extremwert.",
-             "",
-             f"**Ergebnis: {len(found)} Zahlen im Report, {n_bad} Probleme"
-             + (f", {extra} Spec-Einträge ohne Gegenstück im Report" if extra > 0 else "") + ".**",
-             "",
-             "| Zeile | Zahl | Status | Datei | Abfrage = Wert | Kontext |", "|---|---|---|---|---|---|"]
-    lines += [f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} | {r[5]} |" for r in rows]
+             "Bei „Obergrenze ≤“ bzw. „Untergrenze ≥“ steht im Text eine Schranke; geprüft wird der gerundete Extremwert."]
+    total_bad = 0
+    for name, path, sp, sep in targets:
+        if not path.exists():
+            continue
+        rows, n, bad, unused = check(sp, path, sep)
+        total_bad += bad
+        lines += ["", f"## {name}", "",
+                  f"**Ergebnis: {n} Zahlen, {bad} Probleme" + (f", {unused} Spec-Einträge ohne Gegenstück" if unused else "") + ".**",
+                  "", "| Zeile | Zahl | Status | Datei | Abfrage = Wert | Kontext |", "|---|---|---|---|---|---|"]
+        lines += [f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} | {r[5]} |" for r in rows]
+        print(f"{name}: {n} numbers, {bad} problems, {unused} unused spec entries")
+        for r in rows:
+            if r[2] != "ok":
+                print("  line", r[0], r[1], r[2], "|", r[4])
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"{len(found)} numbers, {n_bad} problems, {max(extra, 0)} unused spec entries -> {out}")
-    for r in rows:
-        if r[2] != "ok":
-            print("  line", r[0], r[1], r[2], "|", r[4])
+    print("->", out)
 
 
 EXTRA: list = []

@@ -38,10 +38,10 @@ Alle Läufe verwenden 5 Trainings-Seeds × 3 Programmierdurchgänge (`noise_seed
 | Fairness (C) vs. (A): effektive Auflösung | `py scripts/fairness_resolution.py`, `py scripts/fairness_levels_error.py` | `results/fairness_tiles.csv`, `fairness_sigma.csv`, `fairness_pooled.csv`, `fairness_match.csv`, `fairness_levels_error.csv` |
 | Fairness: (A) an angeglichenen Punkten | `py -m analog_geometry.sweep --dataset mnist --only sweep --sweeps prog_noise --prog-scales 6.82 7.34 10.23 13.63 14.68 20.45 --out-tag fairness`; `--sweeps levels --levels 13 15 27 31`; CIFAR: `--prog-scales 1.79 2.13 3.23` | `results/fairness_<ds>.csv` |
 | Zusammenfassungen, Befund-Regel, `figures/main_<ds>` | `py -m analog_geometry.analyze --dataset mnist` (ebenso `cifar10`) | `results/sweep_summary*_<ds>.csv`, `findings*_<ds>.csv`, `band_bootstrap_<ds>.csv`, … |
-| Abb. 1–3, Gesamttabelle | `py -m analog_geometry.report_figures` | `figures/fig1_drift_variants`, `fig2_noise_levels`, `fig3_delta_w`, `results/findings_all.csv` |
+| Abb. 1–4 (Report), Gesamttabelle | `py -m analog_geometry.report_figures` | `figures/fig0_headline` (Abb. 1, Englisch), `fig1_drift_variants`, `fig2_noise_levels`, `fig3_delta_w`, `results/findings_all.csv` |
 | Alles aus den Roh-CSVs neu | `bash scripts/rebuild_all.sh` (in WSL) | alle Zusammenfassungen und Abbildungen |
-| Review-Paket | `bash scripts/build_review.sh` (Git Bash auf dem Host; braucht pandoc und Chrome) | `review/report.pdf`, `fig1–3.png`, `issue9.md` |
-| Zahlenprüfung Report | `py scripts/check_report_numbers.py` | `notes/number_check.md` |
+| Review-Paket | `bash scripts/build_review.sh` (Git Bash auf dem Host; braucht pandoc und Chrome) | `review/report.pdf`, `summary_en.pdf`, `fig0–3.png`, `issue9.md` |
+| Zahlenprüfung Report + englische Zusammenfassung | `py scripts/check_report_numbers.py` | `notes/number_check.md` |
 
 ## Ordnerstruktur
 
@@ -52,7 +52,8 @@ scripts/               Smoke-Test, Gate-Prüfungen, Nachtlauf-Treiber, rebuild_a
 tests/                 pytest (Metriken, Augmentierung)
 results/               alle CSVs; jede Zahl im Report stammt von hier
 figures/               Abbildungen (PNG + PDF)
-report/report.md       2-seitiger Bericht
+report/                report.md (Bericht), summary_en.md (englischer One-Pager)
+review/                Review-Paket (PDFs, Abbildungen, Issue-Entwurf #9)
 notes/                 step3_design.md (Entscheidungen, Vorab-Regel mit Datum), aihwkit_issues_draft.md (Issue-Entwürfe, nicht gepostet),
                        number_check.md (Zahl -> Quelle)
 ENVIRONMENT.md         Versionen, Kompatibilität, Umgehungen
